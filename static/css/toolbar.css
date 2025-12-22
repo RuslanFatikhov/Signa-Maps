@@ -1,0 +1,31 @@
+.toolbar{
+    position: fixed;
+    bottom: 0px;
+    left: 0px;
+    width: 100%;
+
+    max-height: 95px;
+    background-color: var(--white100);
+    border-top: 0.5px solid var(--black025);
+
+    padding-top: var(--space-4);
+    padding-bottom: var(--space-7);
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+    height: 92px;
+    z-index: 1;
+}
+
+@media screen and (min-width: 768px) {
+    .toolbar{
+        width: 390px;
+    }
+
+    .point_info_toolbar{
+        width: 100%;
+    }
+
+    .lists-panel__toolbar {
+        width: min(420px, 88vw);
+    }
+}

@@ -1,0 +1,30 @@
+:root{
+    --black100:#121212;
+    --black025: rgba(18, 18, 18, 0.25);
+
+    --white100:#FFFFFF;
+    --white200:#F5F5F5;
+
+    --gray100:#EAEAEA;
+    --gray200:#757575;
+
+
+}
+
+.prime-100{
+    color: var(--black100);
+}
+
+.prime-100-invert{
+    color: var(--white100);
+}
+
+.secondary-200{
+    color: var(--gray200);
+}
+
+.prime-200-invert{
+    color: var(--white200);
+}
+
+

@@ -1,0 +1,35 @@
+input[type="text"],
+input[type="search"],
+textarea{
+    width: 100%;
+    border: none;
+    border-radius: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--space-4);
+    color: var(--black100);
+    background: var(--gray100);
+    outline: none;
+}
+
+textarea{
+    resize: vertical;
+    min-height: 96px;
+}
+
+input[type="file"]{
+    font-size: 14px;
+}
+
+input:focus,
+textarea:focus{
+    border-color: rgba(18, 18, 18, 0.3);
+}
+
+.listTitleInput{
+    height: 36px;
+    padding: 0px !important;
+    border: none !important;
+    background: none !important;
+    border-radius: 0px !important;
+    font-size: var(--space-6) !important;
+}

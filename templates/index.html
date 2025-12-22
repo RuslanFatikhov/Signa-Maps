@@ -1,0 +1,379 @@
+{% extends "base.html" %}
+
+{% block title %}Signa Maps{% endblock %}
+
+{% block content %}
+<div class="app-shell">
+  <div class="app-stage" id="appStage">
+  
+    
+
+  <div class="main-ui">
+    <!--Map-->
+    <div class="header-map" id="map"></div>
+
+    <div class="menu">
+      <!--Header-->
+      <header class="site-header">
+
+        
+
+        <!--Header-->
+        <div class="header">
+          <h2 id="listTitle" class="prime100">My List</h2>
+          <input id="listTitleInput" class="listTitleInput" type="text" value="My List" style="display:none;">
+
+        </div>
+
+      </header>
+
+      <!--Toolbar-->
+      <div class="toolbar">
+        
+        <span class="hstack w100 sb">
+
+          <!--New-list-->
+          <button class="btn_icon_ghost" id="listToggleBtn" data-lists-toggle="true" type="button" title="Lists">
+                <img src="{{ url_for('static', filename='img/icons/new-list.svg') }}" alt="Edit">
+          </button>
+          
+          <button class="btn_icon_ghost" id="edit-btn" type="button" title="Edit List">
+            <img src="{{ url_for('static', filename='img/icons/pen.svg') }}" alt="Edit">
+          </button>
+          <button class="btn_icon_ghost" id="share-btn" type="button" title="Share List">
+            <img src="{{ url_for('static', filename='img/icons/share.svg') }}" alt="Share">
+          </button>
+          <button class="btn_icon_ghost" id="add-btn" type="button" title="Add">
+            <img src="{{ url_for('static', filename='img/icons/plus.svg') }}" alt="Add">
+          </button>
+
+            <button class="btn_label_ghost w100" id="cancel-btn" type="button" title="Cancel" style="display:none;">
+              Cancel
+            </button>
+            <button class="btn_label_fill_primary" id="save-btn" type="button" title="Save" style="display:none;">
+              Save
+            </button>
+
+        </span>
+      </div>
+
+      <main class="layout">
+        <section class="list-panel">
+
+          <!--List header-->
+          <div class="hstack list-header">
+            <span id="placeCount" class="card-meta"></span>
+          </div>
+
+
+          <div id="places" class="card-stack"></div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div class="undo-banner" id="undoBanner" aria-live="polite" style="display:none;">
+    <span class="undo-banner__text" id="undoText">Point deleted</span>
+    <button class="btn_label_ghost_invert" type="button" id="undoBtn">Undo</button>
+  </div>
+
+  
+
+  <div class="sheet-backdrop" id="addSheetBackdrop" aria-hidden="true"></div>
+  <section class="sheet" id="addSheet" aria-hidden="true">
+    <div class="sheet__content">
+      <header class="sheet__header">
+          <h2 class="prime100" id="placeSheetTitle">New place</h2>
+         <button class="btn_icon_ghost" type="button" id="sheetClose" aria-label="Закрыть шторку">
+          <img src="{{ url_for('static', filename='img/icons/cross.svg') }}" alt="Close">
+        </button>
+        
+      </header>
+
+      <form id="placeForm" class="sheet__form">
+        <input id="placeLat" name="lat" type="hidden">
+        <input id="placeLng" name="lng" type="hidden">
+
+        <!--Search-->
+        <div class="field pdlr4" style="position: absolute; left: 0px; top: 86px; width: 100%; z-index: 100;">
+          <button class="field__search" id="searchTrigger" type="button">
+            <img src="{{ url_for('static', filename='img/icons/search.svg') }}" alt="" aria-hidden="true">
+            <span class="field__search-label">Search place</span>
+          </button>
+        </div>
+
+        <!--Map-->
+        <div class="field">
+          <div class="sheet-map-wrap" id="sheetMapWrap">
+            <div id="sheetMap" class="sheet-map" role="presentation"></div>
+            <div class="sheet-map__controls">
+
+              <!--Fullscreen is broken. Back when it will be fixed-->
+              <!--button
+                type="button"
+                class="btn_icon_label_primary_invert"
+                id="sheetMapFullToggle"
+                aria-label="На весь экран"
+                data-icon-expand="{{ url_for('static', filename='img/icons/maximize.svg') }}"
+                data-icon-collapse="{{ url_for('static', filename='img/icons/minimize.svg') }}"
+              >
+                <img src="{{ url_for('static', filename='img/icons/maximize.svg') }}" alt="" aria-hidden="true">
+              </button-->
+              <button type="button" class="btn_icon_label_primary_invert" id="sheetMyLocation"><img src="{{ url_for('static', filename='img/icons/my-location.svg') }}" alt="" aria-hidden="true"></button>
+            </div>
+          </div>
+        </div>
+
+        
+
+        <div class="field pdlr4 hstack gap4 fs">
+          <p class="prime-100 fw700" style="margin-top: var(--space-3); width: var(--space-10);">Name</p>
+          <input name="title" id="placeTitle" type="text" placeholder="Point name">
+        </div>
+
+        <div class="field pdlr4 hstack gap4 fs">
+          <p class="prime-100 fw700" style="margin-top: var(--space-3); width: var(--space-10);">Note</p>
+          <textarea name="note" id="placeNote" rows="3" placeholder="Any note"></textarea>
+        </div>
+
+        <!--Photo is disabled in ver 1.0-->
+        <!--div class="field pdlr4">
+          <div class="field__row">
+            <label class="field__label"  for="photosInput">Photos</label>
+            <span class="field__hint">Up to 10 JPG/PNG, compressed to 2 MB</span>
+          </div>
+          <input id="photosInput" type="file" accept="image/jpeg,image/png" multiple>
+          <div id="photoPreview" class="photo-preview"></div>
+        </div-->
+
+
+        <p class="form-error" id="formError" role="alert"></p>
+        
+        <div class="sheet__submit">
+          <button class="btn_label_fill_primary" type="submit">Save point</button>
+        </div>
+      </form>
+
+    </div>
+  </section>
+
+  <div class="sheet-backdrop" id="viewSheetBackdrop" aria-hidden="true"></div>
+
+  <!--Place information-->
+  <section class="sheet sheet--info" id="viewSheet" aria-hidden="true">
+
+    <div class="sheet__content">
+
+      <!--Header-->
+      <header class="sheet__header sheet__header--info">
+        <h3 class="sheet__title" id="viewTitle"></h3>
+        <button class="btn_icon_ghost" type="button" id="viewSheetClose" aria-label="Закрыть шторку">
+          <img src="{{ url_for('static', filename='img/icons/cross.svg') }}" alt="Close">
+        </button>
+      </header>
+
+
+      <!--Map-->
+      <div id="viewMap" class="view-map" role="presentation"></div>
+
+
+      <!--Point information-->
+      <div class="sheet_info_information">
+
+
+        <!--Place information-->
+        <div class="sheet__section">
+          <h3 class="sheet__value" id="viewMapLabel"></h3>
+        </div>
+
+        <div class="sheet__section">
+          <p class="caption secondary-200">Address</p>
+          <p class="sheet__value" id="viewAddress"></p>
+        </div>
+
+        <!--Description-->
+        <div class="sheet__section">
+          <p class="sheet__note" id="viewNote"></p>
+        </div>
+
+        <!--Details-->
+        <!--div class="sheet__section" id="viewDetailsSection">
+          <table class="info-table" id="viewDetailsTable">
+            <tbody id="viewDetailsBody"></tbody>
+          </table>
+          <template id="viewDetailsRowTemplate">
+            <tr class="info-table__row">
+              <th scope="row" class="info-table__key"></th>
+              <td class="info-table__value"></td>
+            </tr>
+          </template>
+        </div-->
+
+        <!--Photos later-->
+        <!--div id="viewPhotos" class="photo-grid"></div-->
+      </div>
+
+      <!--Toolbar-->
+      <div class="toolbar point_info_toolbar">
+        
+        <span class="hstack w100 sb">
+          
+          <button class="btn_icon_ghost" id="viewEditBtn" type="button" title="Edit place">
+            <img src="{{ url_for('static', filename='img/icons/pen.svg') }}" alt="Edit place">
+          </button>
+          <button class="btn_icon_ghost" id="viewShareBtn" type="button" title="Share List">
+            <img src="{{ url_for('static', filename='img/icons/share.svg') }}" alt="Share">
+          </button>
+          <button class="btn_icon_ghost" id="viewOpenBtn" type="button" title="Add">
+            <img src="{{ url_for('static', filename='img/icons/forward.svg') }}" alt="Add">
+          </button>
+          <button class="btn_label_stroke" id="cancel-btn" type="button" title="Cancel" style="display:none;">
+            Cancel
+          </button>
+          <button class="btn_label_fill_primary" id="save-btn" type="button" title="Save" style="display:none;">
+            Save
+          </button>
+        </span>
+      </div>
+
+
+    </div>
+  </section>
+
+  <div class="sheet-backdrop" id="searchSheetBackdrop" aria-hidden="true"></div>
+  <section class="sheet sheet--info" id="searchSheet" aria-hidden="true">
+    <div class="sheet__handle"></div>
+    <div class="sheet__content">
+      <header class="sheet__header">
+        <div>
+          <h2 class="prime-100">Search results</h2>
+        </div>
+        <button class="btn_icon_ghost" type="button" id="searchSheetClose" aria-label="Закрыть шторку">
+          <img src="{{ url_for('static', filename='img/icons/cross.svg') }}" alt="Close">
+        </button>
+      </header>
+      <div class="field pdlr4">
+        <div class="field__search_clear">
+          <img src="{{ url_for('static', filename='img/icons/search.svg') }}" alt="" aria-hidden="true">
+          <input id="searchSheetInput" type="search" placeholder="Search">
+        </div>
+      </div>
+      <div class="field pdlr4">
+        <div id="searchSheetList" class="search-results"></div>
+      </div>
+    </div>
+  </section>
+
+  <!--Share sheet-->
+  <div class="sheet-backdrop" id="shareSheetBackdrop" aria-hidden="true"></div>
+  <section class="sheet sheet--info" id="shareSheet" aria-hidden="true">
+    <div class="sheet__handle"></div>
+    <div class="sheet__content">
+      <header class="sheet__header">
+        <h2 class="prime100" id="placeSheetTitle">Share list</h2>
+        <button class="btn_icon_ghost" type="button" id="shareSheetClose" aria-label="Закрыть шторку">
+          <img src="{{ url_for('static', filename='img/icons/cross.svg') }}" alt="Close">
+        </button>
+      </header>
+      <div class="vstack gap2 pd_lr4">
+        <button class="btn_label_secondary_fill sb" type="button" data-share="gpx">Share as GPX <img src="{{ url_for('static', filename='img/icons/file.svg') }}" alt="" aria-hidden="true"></button>
+      </div>
+
+      <div class="sheet__submit sheet__submit--share">
+          <div class="share-toggle">
+            <span class="vstack"><h4 class="prime100">Viewer can edit</h4></span>
+            <label class="toggle">
+              <input id="shareEditableToggle" type="checkbox" aria-label="Viewer can edit">
+              <span class="toggle__track" aria-hidden="true"></span>
+            </label>
+          </div>
+          <button class="btn_label_fill_primary" id="shareListBtn" type="button">Share list</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="toast" id="shareToast" role="status" aria-live="polite">
+    <div class="toast__body">
+      <div class="toast__qr" id="shareToastQr" aria-hidden="true"></div>
+      <div class="toast__text">
+        <p class="toast__title" id="shareToastTitle">Link copied</p>
+      </div>
+      <button class="toast__close" type="button" id="shareToastClose" aria-label="Закрыть уведомление">
+        <img src="{{ url_for('static', filename='img/icons/cross.svg') }}" alt="" aria-hidden="true">
+      </button>
+    </div>
+  </div>
+
+  <div class="sheet-backdrop" id="openMapSheetBackdrop" aria-hidden="true"></div>
+  <section class="sheet sheet--info" id="openMapSheet" aria-hidden="true">
+    <div class="sheet__handle"></div>
+    <div class="sheet__content">
+      <header class="sheet__header">
+        <h2 class="prime100">Open place</h2>
+        <button class="btn_icon_ghost" type="button" id="openMapSheetClose" aria-label="Закрыть шторку">
+          <img src="{{ url_for('static', filename='img/icons/cross.svg') }}" alt="Close">
+        </button>
+      </header>
+      <div class="cell-list" id="openMapServiceList">
+        <button class="cell" type="button" data-map-service="2gis">2GIS</button>
+        <button class="cell" type="button" data-map-service="yandex">Yandex Maps</button>
+        <button class="cell" type="button" data-map-service="apple">Apple Maps</button>
+        <button class="cell" type="button" data-map-service="google">Google Maps</button>
+      </div>
+    </div>
+  </section>
+
+  </div>
+
+  <aside class="lists-panel" id="listsPanel" aria-hidden="true">
+    <header class="sheet__header">
+        <h3 class="lists-panel__title">My Lists</h3>
+
+
+        <button class="btn_icon_ghost lists-panel__close" type="button" id="listsPanelClose" aria-label="Закрыть списки">
+          <img src="{{ url_for('static', filename='img/icons/cross.svg') }}" alt="Close">
+        </button>
+    </header>
+
+    <!--Toolbar List-->
+    <div class="lists-panel__toolbar toolbar">
+
+      <span class="hstack w100 gap4">
+          <!--Edit list-->
+          <button class="btn_icon_ghost" type="button" id="listEditToggle">
+            <img src="{{ url_for('static', filename='img/icons/pen.svg') }}" alt="Edit">
+          </button>
+
+          <span class="hstack w100 gap4">
+            <button class="btn_label_stroke  w100" type="button" id="listEditCancel" style="display:none;">Cancel</button>
+            <button class="btn_label_fill_primary" type="button" id="listEditSave" style="display:none;">Save</button>
+          </span>
+
+          <!--New list-->
+          <button class="btn_icon_ghost" type="button" id="createListBtn">
+            <img src="{{ url_for('static', filename='img/icons/plus.svg') }}" alt="Create new list">
+          </button>
+      </span>
+    </div>
+
+    <div class="lists-panel__body" id="listsPanelBody"></div>
+
+  </aside>
+  <div class="lists-backdrop" id="listsBackdrop" aria-hidden="true"></div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script src="{{ url_for('static', filename='js/qr.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/toast.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/storage.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/map.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/render.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/view.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/form.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/share.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/edit.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% endblock %}

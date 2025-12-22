@@ -1,0 +1,91 @@
+button{
+    cursor: pointer;
+    display: flex;
+    border: none;
+    min-width: 48px;
+    min-height: 48px;
+}
+
+.btn_icon_ghost{
+    min-width: var(--space-8);
+    min-height: var(--space-8);
+    background: none;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn_icon_label_primary_invert{
+    width: var(--space-8) !important;
+    height: var(--space-8) !important;
+    background: var(--white200);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--space-4);
+}
+
+.btn_icon_ghost img{
+    width: var(--space-5);
+    height: var(--space-5);
+}
+
+
+.toolbar .btn_label_stroke, .btn_label_fill_primary{
+    width: 100%;
+    border-radius: var(--space-4);
+}
+
+.btn_label_stroke{
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4) var(--space-2);
+    background: none;
+    border: 1px solid var(--black100);
+    color: var(--black100);
+    height: var(--space-8);
+    border-radius: var(--space-4);
+}
+
+.btn_label_fill_primary{
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4) var(--space-2);
+    background-color: var(--black100);
+    border: none;
+    color: var(--white100);
+    height: var(--space-8);
+}
+
+.btn_label_secondary_fill{
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-2) var(--space-4);
+    background-color: var(--gray100);
+    border: none;
+    color: var(--black100);
+    height: var(--space-8);
+    border-radius: var(--space-4);
+}
+
+.btn_label_ghost{
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4) var(--space-2);
+    background: none;
+    color: var(--black100);
+    height: var(--space-8);
+}
+
+.btn_label_ghost_invert{
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4) var(--space-2);
+    background: none;
+    border: 1px solid var(--black100);
+    color: var(--white100);
+    height: var(--space-8);
+}
+

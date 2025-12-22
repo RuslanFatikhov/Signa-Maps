@@ -1,0 +1,61 @@
+:root{
+    --space-0: 0;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 10px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
+    --space-7: 36px;
+    --space-8: 40px;
+    --space-9: 48px;
+    --space-10: 56px;
+    --space-11: 64px;
+    --space-12: 80px;
+    --space-13: 96px;
+    --space-14: 100px;
+    --br-top: var(--space-3) var(--space-3) 0 0;
+}
+
+.pd_lr4{
+    padding-left: var(--space-4) !important;
+    padding-right: var(--space-4) !important;
+}
+
+.hstack{
+    display: flex !important;
+    flex-direction: row !important;
+}
+
+.vstack{
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.sb{
+    justify-content: space-between !important;
+}
+
+.gap2{
+    gap: var(--space-2) !important;
+}
+
+.gap4{
+    gap: var(--space-4) !important;
+}
+
+.gap5{
+    gap: var(--space-5 )!important;
+}
+
+.gap6{
+    gap: var(--space-6) !important;
+}
+
+.gap8{
+    gap: var(--space-8) !important;
+}
+
+.fs{
+    align-items: flex-start !important;
+}

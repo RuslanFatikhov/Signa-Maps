@@ -1,0 +1,39 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+
+h1, h2, h3, h4, h5, h6,p,a,li,span,div,button, input, textarea{
+    font-family: 'Inter', sans-serif;
+}
+
+h2{
+    font-size: var(--space-6);
+    line-height: var(--space-7);
+    font-weight: 600;
+    letter-spacing: -2%;
+}
+
+h3{
+    font-size: var(--space-5);
+    line-height: var(--space-6);
+    font-weight: 600;
+    letter-spacing: -2%;
+}
+
+button{
+    font-size: var(--space-4);
+    line-height: 120%;
+    letter-spacing: 0%;
+    font-weight: 500;
+}
+
+.caption{
+    font-size: 14px;
+    line-height: 16px;
+    font-weight: 500;
+    letter-spacing: 0.25px;
+    text-align: left;
+}
+
+.fw700{
+    font-weight: 700 !important;
+}
+
