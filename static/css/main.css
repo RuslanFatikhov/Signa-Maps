@@ -71,13 +71,7 @@ body.lists-open .lists-backdrop{
     gap: var(--space-3);
 }
 
-.lists-panel__toolbar{
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-3);
-    padding: 0 var(--space-1);
-}
+
 
 .lists-panel__actions{
     display: inline-flex;
