@@ -4,6 +4,7 @@ button{
     border: none;
     min-width: 48px;
     min-height: 48px;
+    white-space: nowrap !important;
 }
 
 .btn_icon_ghost{

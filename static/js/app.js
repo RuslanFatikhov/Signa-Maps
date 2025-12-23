@@ -273,6 +273,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const ensureLists = () => {
+    let usingOnboarding = false;
     if (isRemoteShare) {
       const remoteTitle = remoteData?.title || "My List";
       const remotePlaces = remoteData?.places || [];
@@ -321,11 +322,14 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!lists.length) {
       const onboardingList = createOnboardingList();
       lists = [onboardingList];
-      GeoStore.saveLists(lists);
+      currentListId = onboardingList.id;
+      usingOnboarding = true;
     }
     if (!currentListId) {
       const activeId = GeoStore.loadActiveListId();
       currentListId = lists.find((l) => l.id === activeId)?.id || lists[0].id;
+    }
+    if (!usingOnboarding && currentListId) {
       GeoStore.saveActiveListId(currentListId);
     }
   };

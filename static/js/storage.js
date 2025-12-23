@@ -58,7 +58,11 @@ const GeoStore = (() => {
   const migrateLegacy = () => {
     try {
       const legacyPlaces = localStorage.getItem(STORAGE_KEY);
-      const legacyTitle = localStorage.getItem(TITLE_KEY) || "My List";
+      const legacyTitleRaw = localStorage.getItem(TITLE_KEY);
+      if (legacyPlaces == null && legacyTitleRaw == null) {
+        return [];
+      }
+      const legacyTitle = legacyTitleRaw || "My List";
       const places = legacyPlaces ? JSON.parse(legacyPlaces) : [];
       const list = {
         id: createId(),
