@@ -10,6 +10,7 @@ const GeoShare = (() => {
   const shareQrLabel = document.getElementById("shareSheetQrLabel");
   let dataProvider = null;
   let remoteShare = null;
+  let remoteSharePromise = null;
 
   // Lightweight LZ-based compressor (subset of lz-string, MIT) to shrink shared URLs.
   const LZString = (() => {
@@ -608,8 +609,7 @@ ${wpts}
         body: JSON.stringify({ title, places: normalized }),
       });
       if (!response.ok) throw new Error("Share create failed");
-      remoteShare = await response.json();
-      return remoteShare;
+      return await response.json();
     } catch (err) {
       console.warn("Remote share create failed", err);
       alert("Не удалось создать ссылку.");
@@ -619,7 +619,18 @@ ${wpts}
 
   const ensureRemoteShare = async () => {
     if (remoteShare?.editUrl) return remoteShare;
-    return createRemoteShare();
+    if (remoteSharePromise) return remoteSharePromise;
+    remoteSharePromise = createRemoteShare()
+      .then((share) => {
+        if (share?.editUrl) {
+          remoteShare = share;
+        }
+        return share;
+      })
+      .finally(() => {
+        remoteSharePromise = null;
+      });
+    return remoteSharePromise;
   };
 
   const shareMagicLink = async () => {
@@ -653,13 +664,13 @@ ${wpts}
     }
     let link = "";
     if (editable) {
-      if (shareQrLabel) shareQrLabel.textContent = "Generating edit link...";
-      const remote = await ensureRemoteShare();
-      if (!remote?.editUrl) {
-        if (shareQrLabel) shareQrLabel.textContent = "Failed to create edit link";
+      if (!remoteShare?.editUrl) {
+        if (shareQrLabel) {
+          shareQrLabel.textContent = remoteSharePromise ? "Generating edit link..." : "Create edit link to show QR";
+        }
         return;
       }
-      link = remote.editUrl;
+      link = remoteShare.editUrl;
     } else {
       const payload = compactPayload({ places, title, editable: false });
       link = buildShareUrl(payload);

@@ -16,9 +16,23 @@
     z-index: 1;
 }
 
+.toolbar--fixed-main{
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: calc(92px + var(--safe-bottom));
+    padding-bottom: calc(var(--space-7) + var(--safe-bottom));
+    z-index: 1000;
+}
+
 @media screen and (min-width: 768px) {
     .toolbar{
         width: 390px;
+    }
+
+    .toolbar--fixed-main{
+        width: 100%;
     }
 
     .point_info_toolbar{

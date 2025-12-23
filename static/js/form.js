@@ -297,7 +297,7 @@ const GeoForm = (() => {
     btn.type = "button";
     btn.className = "search-result";
     btn.innerHTML = `
-        <span class="vstack w100 gap4">
+        <span class="vstack w100">
           <div class="search-result__title">${item.display_name.split(",")[0]}</div>
           <div class="search-result__meta caption">${item.display_name}</div>
         </span>

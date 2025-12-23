@@ -27,36 +27,6 @@
 
       </header>
 
-      <!--Toolbar-->
-      <div class="toolbar">
-        
-        <span class="hstack w100 sb">
-
-          <!--New-list-->
-          <button class="btn_icon_ghost" id="listToggleBtn" data-lists-toggle="true" type="button" title="Lists">
-                <img src="{{ url_for('static', filename='img/icons/new-list.svg') }}" alt="Edit">
-          </button>
-          
-          <button class="btn_icon_ghost" id="edit-btn" type="button" title="Edit List">
-            <img src="{{ url_for('static', filename='img/icons/pen.svg') }}" alt="Edit">
-          </button>
-          <button class="btn_icon_ghost" id="share-btn" type="button" title="Share List">
-            <img src="{{ url_for('static', filename='img/icons/share.svg') }}" alt="Share">
-          </button>
-          <button class="btn_icon_ghost" id="add-btn" type="button" title="Add">
-            <img src="{{ url_for('static', filename='img/icons/plus.svg') }}" alt="Add">
-          </button>
-
-            <button class="btn_label_ghost w100" id="cancel-btn" type="button" title="Cancel" style="display:none;">
-              Cancel
-            </button>
-            <button class="btn_label_fill_primary" id="save-btn" type="button" title="Save" style="display:none;">
-              Save
-            </button>
-
-        </span>
-      </div>
-
       <main class="layout">
         <section class="list-panel">
 
@@ -362,6 +332,35 @@
 
   </aside>
   <div class="lists-backdrop" id="listsBackdrop" aria-hidden="true"></div>
+</div>
+
+<!--Main toolbar-->
+<div class="toolbar toolbar--fixed-main">
+  <span class="hstack w100 sb">
+
+    <!--New-list-->
+    <button class="btn_icon_ghost" id="listToggleBtn" data-lists-toggle="true" type="button" title="Lists">
+      <img src="{{ url_for('static', filename='img/icons/new-list.svg') }}" alt="Edit">
+    </button>
+
+    <button class="btn_icon_ghost" id="edit-btn" type="button" title="Edit List">
+      <img src="{{ url_for('static', filename='img/icons/pen.svg') }}" alt="Edit">
+    </button>
+    <button class="btn_icon_ghost" id="share-btn" type="button" title="Share List">
+      <img src="{{ url_for('static', filename='img/icons/share.svg') }}" alt="Share">
+    </button>
+    <button class="btn_icon_ghost" id="add-btn" type="button" title="Add">
+      <img src="{{ url_for('static', filename='img/icons/plus.svg') }}" alt="Add">
+    </button>
+
+    <button class="btn_label_ghost w100" id="cancel-btn" type="button" title="Cancel" style="display:none;">
+      Cancel
+    </button>
+    <button class="btn_label_fill_primary" id="save-btn" type="button" title="Save" style="display:none;">
+      Save
+    </button>
+
+  </span>
 </div>
 
 {% endblock %}
