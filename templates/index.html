@@ -278,6 +278,9 @@
       <div class="vstack gap2 pd_lr4">
         <button class="btn_label_secondary_fill sb" type="button" data-share="gpx">Share as GPX <img src="{{ url_for('static', filename='img/icons/file.svg') }}" alt="" aria-hidden="true"></button>
       </div>
+      <div class="share-qr" id="shareSheetQr" aria-live="polite">
+        <div class="share-qr__code" id="shareSheetQrCode"></div>
+      </div>
 
       <div class="sheet__submit sheet__submit--share">
           <div class="share-toggle">
@@ -294,7 +297,6 @@
 
   <div class="toast" id="shareToast" role="status" aria-live="polite">
     <div class="toast__body">
-      <div class="toast__qr" id="shareToastQr" aria-hidden="true"></div>
       <div class="toast__text">
         <p class="toast__title" id="shareToastTitle">Link copied</p>
       </div>

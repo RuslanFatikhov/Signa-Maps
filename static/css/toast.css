@@ -18,30 +18,14 @@
 
 .toast__body{
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: 1fr auto;
     align-items: center;
     gap: var(--space-4);
     background: var(--black100);
     color: var(--white100);
-    border-radius: var(--br-card);
+    border-radius: var(--space-4);
     padding: var(--space-4);
     box-shadow: 0 10px 30px rgba(16, 24, 40, 0.25);
-}
-
-.toast__qr{
-    width: 88px;
-    height: 88px;
-    background: var(--white200);
-    border-radius: var(--br-s);
-    display: grid;
-    place-items: center;
-    overflow: hidden;
-}
-
-.toast__qr canvas,
-.toast__qr img{
-    width: 80px;
-    height: 80px;
 }
 
 .toast__text{
@@ -78,4 +62,3 @@
 .toast__close:hover{
     opacity: 1;
 }
-

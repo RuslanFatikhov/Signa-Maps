@@ -6,7 +6,10 @@ const GeoShare = (() => {
   const options = document.querySelectorAll("[data-share]");
   const shareListBtn = document.getElementById("shareListBtn");
   const editableToggle = document.getElementById("shareEditableToggle");
+  const shareQrCode = document.getElementById("shareSheetQrCode");
+  const shareQrLabel = document.getElementById("shareSheetQrLabel");
   let dataProvider = null;
+  let remoteShare = null;
 
   // Lightweight LZ-based compressor (subset of lz-string, MIT) to shrink shared URLs.
   const LZString = (() => {
@@ -588,18 +591,41 @@ ${wpts}
     }
     GeoToast?.show?.({
       title: "Link copied",
-      qrText: link,
     });
   };
 
-  const shareMagicLink = async () => {
+  const createRemoteShare = async () => {
     const { places, title } = getData();
     if (!places.length) {
       alert("Нет мест для ссылки.");
-      return;
+      return null;
     }
-    const payload = compactPayload({ places, title, editable: true });
-    const link = buildShareUrl(payload);
+    try {
+      const normalized = normalizePlaces(places);
+      const response = await fetch("/api/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, places: normalized }),
+      });
+      if (!response.ok) throw new Error("Share create failed");
+      remoteShare = await response.json();
+      return remoteShare;
+    } catch (err) {
+      console.warn("Remote share create failed", err);
+      alert("Не удалось создать ссылку.");
+      return null;
+    }
+  };
+
+  const ensureRemoteShare = async () => {
+    if (remoteShare?.editUrl) return remoteShare;
+    return createRemoteShare();
+  };
+
+  const shareMagicLink = async () => {
+    const remote = await ensureRemoteShare();
+    if (!remote?.editUrl) return;
+    const link = remote.editUrl;
     let copied = false;
     try {
       if (navigator.clipboard?.writeText) {
@@ -614,8 +640,34 @@ ${wpts}
     }
     GeoToast?.show?.({
       title: "Magic link copied",
-      qrText: link,
     });
+  };
+
+  const renderShareQr = async (editable = false) => {
+    if (!shareQrCode) return;
+    shareQrCode.innerHTML = "";
+    const { places, title } = getData();
+    if (!places.length) {
+      if (shareQrLabel) shareQrLabel.textContent = "Add places to generate a link";
+      return;
+    }
+    let link = "";
+    if (editable) {
+      if (shareQrLabel) shareQrLabel.textContent = "Generating edit link...";
+      const remote = await ensureRemoteShare();
+      if (!remote?.editUrl) {
+        if (shareQrLabel) shareQrLabel.textContent = "Failed to create edit link";
+        return;
+      }
+      link = remote.editUrl;
+    } else {
+      const payload = compactPayload({ places, title, editable: false });
+      link = buildShareUrl(payload);
+    }
+    if (GeoQr?.render) GeoQr.render(shareQrCode, link, 512);
+    if (shareQrLabel) {
+      shareQrLabel.textContent = editable ? "QR for edit link" : "QR for view-only link";
+    }
   };
 
   const open = () => {
@@ -630,6 +682,7 @@ ${wpts}
     if (editableToggle) {
       editableToggle.checked = false;
     }
+    renderShareQr(false);
   };
 
   const close = () => {
@@ -653,6 +706,9 @@ ${wpts}
       shareLink();
     }
     close();
+  });
+  editableToggle?.addEventListener("change", () => {
+    renderShareQr(Boolean(editableToggle?.checked));
   });
 
   options.forEach((btn) => {

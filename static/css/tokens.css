@@ -15,6 +15,7 @@
     --space-13: 96px;
     --space-14: 100px;
     --br-top: var(--space-3) var(--space-3) 0 0;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .pd_lr4{

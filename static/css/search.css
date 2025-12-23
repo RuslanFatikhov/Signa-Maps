@@ -7,13 +7,15 @@
 
 .search-result{
    display: flex;
-   flex-direction: column;
+   flex-direction: row;
    padding-top: var(--space-2);
    padding-bottom: var(--space-2);
+   padding-right: var(--space-4);
    border-bottom: 0.5px solid var(--black025);
    cursor: pointer;
-   align-items: flex-start;
+   align-items: center;
    background: none;
+   
 }
 
 .search-result:last-child{

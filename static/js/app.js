@@ -1,8 +1,12 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const params = new URLSearchParams(window.location.search);
-  const sharedParam = params.get("share");
-  const sharedPayload = sharedParam && GeoShare?.decodePayload ? GeoShare.decodePayload(sharedParam) : null;
-  const readOnly = sharedPayload ? !sharedPayload.editable : false;
+  const init = async () => {
+    const params = new URLSearchParams(window.location.search);
+    const remoteShareId = params.get("share_id");
+    const remoteEditable = params.get("editable") === "1";
+    const isRemoteShare = Boolean(remoteShareId);
+    const sharedParam = params.get("share");
+    const sharedPayload = sharedParam && GeoShare?.decodePayload ? GeoShare.decodePayload(sharedParam) : null;
+    const readOnly = isRemoteShare ? !remoteEditable : sharedPayload ? !sharedPayload.editable : false;
 
   const undoBanner = document.getElementById("undoBanner");
   const undoText = document.getElementById("undoText");
@@ -14,6 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const listEditToggle = document.getElementById("listEditToggle");
   const listEditSave = document.getElementById("listEditSave");
   const listEditCancel = document.getElementById("listEditCancel");
+  const listToggleBtn = document.getElementById("listToggleBtn");
 
   let lists = [];
   let currentListId = null;
@@ -26,6 +31,39 @@ document.addEventListener("DOMContentLoaded", () => {
   let listDrafts = [];
   let draggingListId = null;
   let dragHandleId = null;
+  let remoteSaveTimer = null;
+  let remoteData = null;
+
+  const loadRemoteShare = async () => {
+    if (!remoteShareId) return null;
+    try {
+      const response = await fetch(`/api/share/${remoteShareId}`);
+      if (!response.ok) throw new Error("Remote share load failed");
+      return await response.json();
+    } catch (err) {
+      console.warn("Remote share load failed", err);
+      return null;
+    }
+  };
+
+  const saveRemoteShare = async (list) => {
+    if (!remoteShareId || !remoteEditable) return;
+    try {
+      await fetch(`/api/share/${remoteShareId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: list.title || "My List", places: list.places || [] }),
+      });
+    } catch (err) {
+      console.warn("Remote share save failed", err);
+    }
+  };
+
+  const scheduleRemoteSave = (list) => {
+    if (!remoteShareId || !remoteEditable) return;
+    if (remoteSaveTimer) clearTimeout(remoteSaveTimer);
+    remoteSaveTimer = setTimeout(() => saveRemoteShare(list), 400);
+  };
 
   const createOnboardingList = () => {
     const now = Date.now();
@@ -86,6 +124,10 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   };
 
+  if (isRemoteShare) {
+    remoteData = await loadRemoteShare();
+  }
+
   const closeListsPanel = () => {
     document.body.classList.remove("lists-open");
     listsPanel?.setAttribute("aria-hidden", "true");
@@ -105,10 +147,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const updated = updater(lists[idx]);
     if (!updated) return;
     lists = [...lists.slice(0, idx), updated, ...lists.slice(idx + 1)];
-    if (!readOnly) {
+    if (!readOnly && !isRemoteShare) {
       GeoStore.saveLists(lists);
       GeoStore.saveActiveListId(currentListId);
     }
+    scheduleRemoteSave(updated);
   };
 
   const getActiveList = () => lists.find((l) => l.id === currentListId) || null;
@@ -189,7 +232,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const enterListEdit = () => {
-    if (readOnly) return;
+    if (readOnly || isRemoteShare) return;
     listDrafts = lists.map((l) => ({ ...l, places: [...(l.places || [])] }));
     setListEditToolbar(true);
     renderListsPanel();
@@ -230,6 +273,20 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const ensureLists = () => {
+    if (isRemoteShare) {
+      const remoteTitle = remoteData?.title || "My List";
+      const remotePlaces = remoteData?.places || [];
+      lists = [
+        {
+          id: remoteShareId,
+          title: remoteTitle,
+          places: remotePlaces,
+          createdAt: remoteData?.updatedAt || new Date().toISOString(),
+        },
+      ];
+      currentListId = remoteShareId;
+      return;
+    }
     if (readOnly) {
       const single = {
         id: "shared",
@@ -274,7 +331,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const setActiveList = (listId) => {
-    if (readOnly) return;
+    if (readOnly || isRemoteShare) return;
     const exists = lists.find((l) => l.id === listId);
     if (!exists) return;
     currentListId = listId;
@@ -285,7 +342,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const createList = () => {
-    if (readOnly) return;
+    if (readOnly || isRemoteShare) return;
     const collection = listEditMode ? listDrafts : lists;
     const nextIndex = collection.length + 1;
     const title = `Новый список ${nextIndex}`;
@@ -427,6 +484,13 @@ document.addEventListener("DOMContentLoaded", () => {
     if (listEditSave) listEditSave.style.display = "none";
     if (listEditCancel) listEditCancel.style.display = "none";
   }
+  if (isRemoteShare) {
+    if (createListBtn) createListBtn.style.display = "none";
+    if (listEditToggle) listEditToggle.style.display = "none";
+    if (listEditSave) listEditSave.style.display = "none";
+    if (listEditCancel) listEditCancel.style.display = "none";
+    if (listToggleBtn) listToggleBtn.style.display = "none";
+  }
 
   const clearAllBtn = document.getElementById("clearAll");
   if (clearAllBtn && !readOnly) {
@@ -542,4 +606,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   renderListsPanel();
   renderPlaces();
+  };
+
+  init();
 });

@@ -210,7 +210,6 @@ const GeoView = (() => {
       await navigator.clipboard.writeText(url);
       GeoToast?.show?.({
         title: "Link copied",
-        qrText: url,
       });
     } catch (err) {
       console.warn("Clipboard error", err);

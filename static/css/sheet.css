@@ -33,6 +33,7 @@
     transition: transform 260ms ease;
     z-index: 11;
     max-height: 96vh;
+    max-height: 96dvh;
     overflow-y: auto;
     border-radius: var(--br-top);
     pointer-events: none;
@@ -56,6 +57,7 @@
     flex-direction: column;
     position: relative;
     height: 90vh;
+    height: 90dvh;
 }
 
 .sheet__header{
@@ -75,7 +77,7 @@
     flex-direction: column;
     gap: var(--space-4);
     overflow-y: scroll;
-    padding-bottom: var(--space-10);
+    padding-bottom: calc(var(--space-10) + var(--safe-bottom));
 }
 
 .sheet__submit{
@@ -83,6 +85,7 @@
     bottom: 0px;
     width: 100%;
     padding: var(--space-4);
+    padding-bottom: calc(var(--space-4) + var(--safe-bottom));
     background: var(--white100);
     border-top: 0.5px solid var(--black025);
     z-index: 101;
@@ -145,6 +148,28 @@
 .toggle input:checked + .toggle__track::after{
     transform: translateX(20px);
 }
+
+.share-qr{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-4);
+}
+
+.share-qr__code{
+    width: 100%;
+    height: auto;
+    background: var(--white100);
+    border-radius: var(--space-4);
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    padding: var(--space-4);
+}
+
+
+
 
 
 .sheet__title{

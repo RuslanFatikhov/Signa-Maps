@@ -220,6 +220,15 @@ body.lists-open .lists-backdrop{
     cursor: pointer;
 }
 
+.qr-image{
+    display: block;
+    width: 100%;
+    max-width: 360px;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    object-fit: contain;
+}
+
 
 
 
@@ -360,6 +369,7 @@ body.lists-open .lists-backdrop{
 
 .main-ui{
     height: 100vh;
+    height: 100dvh;
     overflow-y: scroll;
 }
 

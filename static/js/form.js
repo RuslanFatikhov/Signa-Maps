@@ -25,6 +25,7 @@ const GeoForm = (() => {
   const searchSheetInput = document.getElementById("searchSheetInput");
   const searchSheetList = document.getElementById("searchSheetList");
   const mapStyleUrl = window.MAPBOX_STYLE_URL || "mapbox://styles/mapbox/streets-v12";
+  const plusIconUrl = window.PLUS_ICON_URL || "/static/img/icons/plus.svg";
 
   const ensureMapboxToken = () => {
     if (typeof mapboxgl === "undefined") return;
@@ -296,8 +297,12 @@ const GeoForm = (() => {
     btn.type = "button";
     btn.className = "search-result";
     btn.innerHTML = `
-        <div class="search-result__title">${item.display_name.split(",")[0]}</div>
-        <div class="search-result__meta caption">${item.display_name}</div>
+        <span class="vstack w100 gap4">
+          <div class="search-result__title">${item.display_name.split(",")[0]}</div>
+          <div class="search-result__meta caption">${item.display_name}</div>
+        </span>
+
+        <img src="${plusIconUrl}" alt="Select">
       `;
     btn.addEventListener("click", () => {
       const lat = parseFloat(item.lat);
