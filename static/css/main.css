@@ -51,6 +51,10 @@ body.lists-open .app-stage{
     transform: translateX(min(420px, 88vw));
 }
 
+body.lists-open .toolbar--fixed-main{
+    transform: translateX(min(420px, 88vw));
+}
+
 body.lists-open .lists-panel{
     transform: translateX(0);
 }
@@ -296,9 +300,9 @@ body.lists-open .lists-backdrop{
 }
 
 .empty_state_list img{
-    right: 32px;
-    width: 50%;
+    width: auto;
     height: 20vh;
+    aspect-ratio: 1 / 1;
     object-fit: contain;
 }
 

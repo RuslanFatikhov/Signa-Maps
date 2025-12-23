@@ -21,8 +21,8 @@
     left: 0;
     bottom: 0;
     width: 100%;
-    height: calc(92px + var(--safe-bottom));
-    padding-bottom: calc(var(--space-7) + var(--safe-bottom));
+    height: calc(70px + var(--safe-bottom));
+    padding: var(--space-4);
     z-index: 1000;
 }
 

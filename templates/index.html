@@ -49,83 +49,7 @@
 
   
 
-  <div class="sheet-backdrop" id="addSheetBackdrop" aria-hidden="true"></div>
-  <section class="sheet" id="addSheet" aria-hidden="true">
-    <div class="sheet__content">
-      <header class="sheet__header">
-          <h2 class="prime100" id="placeSheetTitle">New place</h2>
-         <button class="btn_icon_ghost" type="button" id="sheetClose" aria-label="Закрыть шторку">
-          <img src="{{ url_for('static', filename='img/icons/cross.svg') }}" alt="Close">
-        </button>
-        
-      </header>
-
-      <form id="placeForm" class="sheet__form">
-        <input id="placeLat" name="lat" type="hidden">
-        <input id="placeLng" name="lng" type="hidden">
-
-        <!--Search-->
-        <div class="field pdlr4" style="position: absolute; left: 0px; top: 86px; width: 100%; z-index: 100;">
-          <button class="field__search" id="searchTrigger" type="button">
-            <img src="{{ url_for('static', filename='img/icons/search.svg') }}" alt="" aria-hidden="true">
-            <span class="field__search-label">Search place</span>
-          </button>
-        </div>
-
-        <!--Map-->
-        <div class="field">
-          <div class="sheet-map-wrap" id="sheetMapWrap">
-            <div id="sheetMap" class="sheet-map" role="presentation"></div>
-            <div class="sheet-map__controls">
-
-              <!--Fullscreen is broken. Back when it will be fixed-->
-              <!--button
-                type="button"
-                class="btn_icon_label_primary_invert"
-                id="sheetMapFullToggle"
-                aria-label="На весь экран"
-                data-icon-expand="{{ url_for('static', filename='img/icons/maximize.svg') }}"
-                data-icon-collapse="{{ url_for('static', filename='img/icons/minimize.svg') }}"
-              >
-                <img src="{{ url_for('static', filename='img/icons/maximize.svg') }}" alt="" aria-hidden="true">
-              </button-->
-              <button type="button" class="btn_icon_label_primary_invert" id="sheetMyLocation"><img src="{{ url_for('static', filename='img/icons/my-location.svg') }}" alt="" aria-hidden="true"></button>
-            </div>
-          </div>
-        </div>
-
-        
-
-        <div class="field pdlr4 hstack gap4 fs">
-          <p class="prime-100 fw700" style="margin-top: var(--space-3); width: var(--space-10);">Name</p>
-          <input name="title" id="placeTitle" type="text" placeholder="Point name">
-        </div>
-
-        <div class="field pdlr4 hstack gap4 fs">
-          <p class="prime-100 fw700" style="margin-top: var(--space-3); width: var(--space-10);">Note</p>
-          <textarea name="note" id="placeNote" rows="3" placeholder="Any note"></textarea>
-        </div>
-
-        <!--Photo is disabled in ver 1.0-->
-        <!--div class="field pdlr4">
-          <div class="field__row">
-            <label class="field__label"  for="photosInput">Photos</label>
-            <span class="field__hint">Up to 10 JPG/PNG, compressed to 2 MB</span>
-          </div>
-          <input id="photosInput" type="file" accept="image/jpeg,image/png" multiple>
-          <div id="photoPreview" class="photo-preview"></div>
-        </div-->
-
-
-        <p class="form-error" id="formError" role="alert"></p>
-        
-        <div class="sheet__submit">
-          <button class="btn_label_fill_primary" type="submit">Save point</button>
-        </div>
-      </form>
-
-    </div>
-  </section>
+  
 
   <div class="sheet-backdrop" id="viewSheetBackdrop" aria-hidden="true"></div>
 
@@ -197,10 +121,10 @@
           <button class="btn_icon_ghost" id="viewOpenBtn" type="button" title="Add">
             <img src="{{ url_for('static', filename='img/icons/forward.svg') }}" alt="Add">
           </button>
-          <button class="btn_label_stroke" id="cancel-btn" type="button" title="Cancel" style="display:none;">
+          <button class="btn_label_stroke" id="view-cancel-btn" type="button" title="Cancel" style="display:none;">
             Cancel
           </button>
-          <button class="btn_label_fill_primary" id="save-btn" type="button" title="Save" style="display:none;">
+          <button class="btn_label_fill_primary" id="view-save-btn" type="button" title="Save" style="display:none;">
             Save
           </button>
         </span>
@@ -333,6 +257,85 @@
   </aside>
   <div class="lists-backdrop" id="listsBackdrop" aria-hidden="true"></div>
 </div>
+
+<!--Add place sheet-->
+<div class="sheet-backdrop" id="addSheetBackdrop" aria-hidden="true"></div>
+<section class="sheet" id="addSheet" aria-hidden="true">
+    <div class="sheet__content">
+      <header class="sheet__header">
+          <h2 class="prime100" id="placeSheetTitle">New place</h2>
+         <button class="btn_icon_ghost" type="button" id="sheetClose" aria-label="Закрыть шторку">
+          <img src="{{ url_for('static', filename='img/icons/cross.svg') }}" alt="Close">
+        </button>
+        
+      </header>
+
+      <form id="placeForm" class="sheet__form">
+        <input id="placeLat" name="lat" type="hidden">
+        <input id="placeLng" name="lng" type="hidden">
+
+        <!--Search-->
+        <div class="field pdlr4" style="position: absolute; left: 0px; top: 86px; width: 100%; z-index: 100;">
+          <button class="field__search" id="searchTrigger" type="button">
+            <img src="{{ url_for('static', filename='img/icons/search.svg') }}" alt="" aria-hidden="true">
+            <span class="field__search-label">Search place</span>
+          </button>
+        </div>
+
+        <!--Map-->
+        <div class="field">
+          <div class="sheet-map-wrap" id="sheetMapWrap">
+            <div id="sheetMap" class="sheet-map" role="presentation"></div>
+            <div class="sheet-map__controls">
+
+              <!--Fullscreen is broken. Back when it will be fixed-->
+              <!--button
+                type="button"
+                class="btn_icon_label_primary_invert"
+                id="sheetMapFullToggle"
+                aria-label="На весь экран"
+                data-icon-expand="{{ url_for('static', filename='img/icons/maximize.svg') }}"
+                data-icon-collapse="{{ url_for('static', filename='img/icons/minimize.svg') }}"
+              >
+                <img src="{{ url_for('static', filename='img/icons/maximize.svg') }}" alt="" aria-hidden="true">
+              </button-->
+              <button type="button" class="btn_icon_label_primary_invert" id="sheetMyLocation"><img src="{{ url_for('static', filename='img/icons/my-location.svg') }}" alt="" aria-hidden="true"></button>
+            </div>
+          </div>
+        </div>
+
+        
+
+        <div class="field pdlr4 hstack gap4 fs">
+          <p class="prime-100 fw700" style="margin-top: var(--space-3); width: var(--space-10);">Name</p>
+          <input name="title" id="placeTitle" type="text" placeholder="Point name">
+        </div>
+
+        <div class="field pdlr4 hstack gap4 fs">
+          <p class="prime-100 fw700" style="margin-top: var(--space-3); width: var(--space-10);">Note</p>
+          <textarea name="note" id="placeNote" rows="3" placeholder="Any note"></textarea>
+        </div>
+
+        <!--Photo is disabled in ver 1.0-->
+        <!--div class="field pdlr4">
+          <div class="field__row">
+            <label class="field__label"  for="photosInput">Photos</label>
+            <span class="field__hint">Up to 10 JPG/PNG, compressed to 2 MB</span>
+          </div>
+          <input id="photosInput" type="file" accept="image/jpeg,image/png" multiple>
+          <div id="photoPreview" class="photo-preview"></div>
+        </div-->
+
+
+        <p class="form-error" id="formError" role="alert"></p>
+        
+        <div class="sheet__submit">
+          <button class="btn_label_fill_primary" type="submit">Save point</button>
+        </div>
+      </form>
+
+    </div>
+</section>
 
 <!--Main toolbar-->
 <div class="toolbar toolbar--fixed-main">
