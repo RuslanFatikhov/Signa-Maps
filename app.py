@@ -9,7 +9,7 @@ from flask import Flask, abort, jsonify, render_template, request, url_for
 
 def create_app() -> Flask:
     app = Flask(__name__, static_folder="static")
-    db_path = os.path.join(app.root_path, "geonotion.db")
+    db_path = "/data/geonotion.db"
 
     def get_db() -> sqlite3.Connection:
         conn = sqlite3.connect(db_path)

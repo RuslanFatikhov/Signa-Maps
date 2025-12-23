@@ -1,27 +1,52 @@
-GeoNotion
-========
+Signa Maps
+==========
 
-Minimal Flask + HTML/CSS/JS app to collect map spots in the browser cache. Click the map, save places, and manage them locally (no backend storage).
+Веб-приложение на Flask для личных списков мест на карте. Точки хранятся в браузере, можно вести несколько списков, добавлять заметки и делиться ссылками (включая режим редактирования) или экспортировать список в GPX.
 
-Quickstart
-----------
+Возможности
+-----------
+- Несколько списков мест с переименованием и сортировкой.
+- Добавление точек кликом на карте или через поиск по OpenStreetMap (Nominatim).
+- Заметки к точкам, просмотр карточки, быстрый переход в сторонние карты.
+- Шаринг: ссылка только для просмотра, “magic link” для редактирования, QR-код.
+- Экспорт списка в GPX.
 
-1) Create a virtualenv (optional) and install deps:
+Данные и хранение
+-----------------
+- Основные списки хранятся в `localStorage` браузера.
+- Общие ссылки для редактирования сохраняются в SQLite (`geonotion.db`) через API `/api/share`.
+- Нет аутентификации и серверной привязки к пользователю — это локальный проект.
+
+Запуск
+------
+1) Установить зависимости:
 ```
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-2) Run the server:
+2) Запустить приложение:
 ```
 python app.py
 ```
-Open http://127.0.0.1:5000/ in the browser.
+Откройте http://127.0.0.1:5600/.
 
-Notes
------
-- Data is stored in `localStorage`, so it stays in the browser.
-- Map uses MapLibre + OpenStreetMap tiles (no token needed); needs network when you run it.
-- Health check is available at `/api/health`.
-# Signa-Maps
+Сетевые зависимости
+-------------------
+- Карта работает через Mapbox GL JS и требует токен (`window.MAPBOX_ACCESS_TOKEN` в `templates/base.html`).
+- Поиск и обратное геокодирование используют OpenStreetMap Nominatim.
+
+API
+---
+- `GET /api/health` — проверка работоспособности.
+- `POST /api/share` — создать общий список (возвращает `editUrl` и `viewUrl`).
+- `GET /api/share/<id>` — получить общий список.
+- `PUT /api/share/<id>` — обновить общий список (для edit-ссылки).
+
+Структура проекта
+-----------------
+- `app.py` — Flask-сервер, SQLite-хранилище share-ссылок.
+- `templates/` — HTML-шаблоны.
+- `static/js/` — логика приложения (карта, формы, рендер, шаринг).
+- `static/css/` — стили интерфейса.
