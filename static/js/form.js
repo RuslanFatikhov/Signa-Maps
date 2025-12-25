@@ -426,7 +426,7 @@ const GeoForm = (() => {
     const lat = parseFloat(latInput?.value);
     const lng = parseFloat(lngInput?.value);
     if (Number.isNaN(lat) || Number.isNaN(lng)) {
-      showError("Выберите точку на карте или через поиск.");
+      showError("Select a point on the map or use the search function");
       return;
     }
 

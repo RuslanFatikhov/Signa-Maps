@@ -87,10 +87,6 @@ body.lists-open .lists-backdrop{
     margin: 0 0 4px 0;
 }
 
-.lists-panel__title{
-    font-size: 22px;
-    margin: 0;
-}
 
 .lists-panel__body{
     display: flex;

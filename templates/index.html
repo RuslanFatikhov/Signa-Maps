@@ -134,60 +134,10 @@
     </div>
   </section>
 
-  <div class="sheet-backdrop" id="searchSheetBackdrop" aria-hidden="true"></div>
-  <section class="sheet sheet--info" id="searchSheet" aria-hidden="true">
-    <div class="sheet__handle"></div>
-    <div class="sheet__content">
-      <header class="sheet__header">
-        <div>
-          <h2 class="prime-100">Search results</h2>
-        </div>
-        <button class="btn_icon_ghost" type="button" id="searchSheetClose" aria-label="Закрыть шторку">
-          <img src="{{ url_for('static', filename='img/icons/cross.svg') }}" alt="Close">
-        </button>
-      </header>
-      <div class="field pdlr4">
-        <div class="field__search_clear">
-          <img src="{{ url_for('static', filename='img/icons/search.svg') }}" alt="" aria-hidden="true">
-          <input id="searchSheetInput" type="search" placeholder="Search">
-        </div>
-      </div>
-      <div class="field pdlr4">
-        <div id="searchSheetList" class="search-results"></div>
-      </div>
-    </div>
-  </section>
 
-  <!--Share sheet-->
-  <div class="sheet-backdrop" id="shareSheetBackdrop" aria-hidden="true"></div>
-  <section class="sheet sheet--info" id="shareSheet" aria-hidden="true">
-    <div class="sheet__handle"></div>
-    <div class="sheet__content">
-      <header class="sheet__header">
-        <h2 class="prime100" id="placeSheetTitle">Share list</h2>
-        <button class="btn_icon_ghost" type="button" id="shareSheetClose" aria-label="Закрыть шторку">
-          <img src="{{ url_for('static', filename='img/icons/cross.svg') }}" alt="Close">
-        </button>
-      </header>
-      <div class="vstack gap2 pd_lr4">
-        <button class="btn_label_secondary_fill sb" type="button" data-share="gpx">Share as GPX <img src="{{ url_for('static', filename='img/icons/file.svg') }}" alt="" aria-hidden="true"></button>
-      </div>
-      <div class="share-qr" id="shareSheetQr" aria-live="polite">
-        <div class="share-qr__code" id="shareSheetQrCode"></div>
-      </div>
+  
 
-      <div class="sheet__submit sheet__submit--share">
-          <div class="share-toggle">
-            <span class="vstack"><h4 class="prime100">Viewer can edit</h4></span>
-            <label class="toggle">
-              <input id="shareEditableToggle" type="checkbox" aria-label="Viewer can edit">
-              <span class="toggle__track" aria-hidden="true"></span>
-            </label>
-          </div>
-          <button class="btn_label_fill_primary" id="shareListBtn" type="button">Share list</button>
-      </div>
-    </div>
-  </section>
+  
 
   <div class="toast" id="shareToast" role="status" aria-live="polite">
     <div class="toast__body">
@@ -223,7 +173,7 @@
 
   <aside class="lists-panel" id="listsPanel" aria-hidden="true">
     <header class="sheet__header">
-        <h3 class="lists-panel__title">My Lists</h3>
+        <h2 class="lists-panel__title prime-100">My Lists</h2>
 
 
         <button class="btn_icon_ghost lists-panel__close" type="button" id="listsPanelClose" aria-label="Закрыть списки">
@@ -259,6 +209,62 @@
   </aside>
   <div class="lists-backdrop" id="listsBackdrop" aria-hidden="true"></div>
 </div>
+
+<!--Share sheet-->
+<div class="sheet-backdrop" id="shareSheetBackdrop" aria-hidden="true"></div>
+<section class="sheet sheet--info" id="shareSheet" aria-hidden="true">
+    <div class="sheet__handle"></div>
+    <div class="sheet__content">
+      <header class="sheet__header">
+        <h2 class="prime100" id="shareSheetTitle">Share List</h2>
+        <button class="btn_icon_ghost" type="button" id="shareSheetClose" aria-label="Закрыть шторку">
+          <img src="{{ url_for('static', filename='img/icons/cross.svg') }}" alt="Close">
+        </button>
+      </header>
+      <div class="vstack gap2 pd_lr4">
+        <button class="btn_label_secondary_fill sb" type="button" data-share="gpx">Share as GPX <img src="{{ url_for('static', filename='img/icons/file.svg') }}" alt="" aria-hidden="true"></button>
+      </div>
+      <div class="share-qr" id="shareSheetQr" aria-live="polite">
+        <div class="share-qr__code" id="shareSheetQrCode"></div>
+      </div>
+
+      <div class="sheet__submit sheet__submit--share">
+          <div class="share-toggle">
+            <span class="vstack"><h4 class="prime100">Viewer can edit</h4></span>
+            <label class="toggle">
+              <input id="shareEditableToggle" type="checkbox" aria-label="Viewer can edit">
+              <span class="toggle__track" aria-hidden="true"></span>
+            </label>
+          </div>
+          <button class="btn_label_fill_primary" id="shareListBtn" type="button">Share list</button>
+      </div>
+    </div>
+</section>
+
+<!--Search sheet-->
+<div class="sheet-backdrop" id="searchSheetBackdrop" aria-hidden="true"></div>
+<section class="sheet sheet--info" id="searchSheet" aria-hidden="true">
+    <div class="sheet__handle"></div>
+    <div class="sheet__content">
+      <header class="sheet__header">
+        <div>
+          <h2 class="prime-100">Search results</h2>
+        </div>
+        <button class="btn_icon_ghost" type="button" id="searchSheetClose" aria-label="Закрыть шторку">
+          <img src="{{ url_for('static', filename='img/icons/cross.svg') }}" alt="Close">
+        </button>
+      </header>
+      <div class="field pdlr4">
+        <div class="field__search_clear">
+          <img src="{{ url_for('static', filename='img/icons/search.svg') }}" alt="" aria-hidden="true">
+          <input id="searchSheetInput" type="search" placeholder="Search">
+        </div>
+      </div>
+      <div class="field pdlr4">
+        <div id="searchSheetList" class="search-results"></div>
+      </div>
+    </div>
+</section>
 
 <!--Add place sheet-->
 <div class="sheet-backdrop" id="addSheetBackdrop" aria-hidden="true"></div>
