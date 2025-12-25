@@ -1,6 +1,6 @@
 const GeoEdit = (() => {
   let editing = false;
-  let originalTitle = "My List";
+  let originalTitle = "My map";
   const titleDisplay = document.getElementById("listTitle");
   const titleInput = document.getElementById("listTitleInput");
   const editBtn = document.getElementById("edit-btn");
@@ -12,7 +12,7 @@ const GeoEdit = (() => {
   const createListBtn = document.getElementById("createListBtn");
 
   const setTitle = (value) => {
-    const safe = value || "My List";
+    const safe = value || "My map";
     if (titleDisplay) titleDisplay.textContent = safe;
     if (titleInput) titleInput.value = safe;
   };
@@ -56,7 +56,7 @@ const GeoEdit = (() => {
     setToolbar(false);
 
     if (persist && titleInput) {
-      const newTitle = titleInput.value.trim() || originalTitle || "My List";
+      const newTitle = titleInput.value.trim() || originalTitle || "My map";
       setTitle(newTitle);
       if (onSave) onSave(newTitle);
     } else {
@@ -66,7 +66,7 @@ const GeoEdit = (() => {
     notifyEditChange();
   };
 
-  const init = ({ title = "My List", onSave, onEditChange, onExit } = {}) => {
+  const init = ({ title = "My map", onSave, onEditChange, onExit } = {}) => {
     onEditChangeCb = onEditChange;
     onExitCb = onExit;
     setTitle(title);

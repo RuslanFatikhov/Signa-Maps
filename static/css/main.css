@@ -130,8 +130,7 @@ body.lists-open .lists-backdrop{
 }
 
 .list-edit-handle{
-    cursor: grab;
-    font-size: 18px;
+    display: none;
 }
 
 .list-edit-row input{
@@ -365,6 +364,13 @@ body.lists-open .lists-backdrop{
     height: 100vh;
     height: 100dvh;
     overflow-y: scroll;
+}
+
+.tofu-icon{
+    width: var(--space-5);
+    height: var(--space-5);
+    object-fit: contain;
+    border: var(--space-4);
 }
 
 

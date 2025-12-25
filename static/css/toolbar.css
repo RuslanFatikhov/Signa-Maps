@@ -23,7 +23,7 @@
     width: 100%;
     height: calc(92px + var(--safe-bottom));
     padding-bottom: calc(var(--space-7) + var(--safe-bottom));
-    z-index: 1000;
+    z-index: 99;
     transition: transform 0.15s ease;
     will-change: transform;
 }

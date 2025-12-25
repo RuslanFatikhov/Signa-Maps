@@ -431,7 +431,7 @@ const GeoShare = (() => {
       .filter(Boolean);
 
   // Remove heavy fields (e.g., photos) and shorten ids to keep the link smaller.
-  const compactPayload = ({ places = [], title = "My List", editable = false } = {}) => {
+  const compactPayload = ({ places = [], title = "My map", editable = false } = {}) => {
     const normalized = normalizePlaces(places);
     const compactPlaces = normalized.map((place, idx) => ({
       id: `p${idx}`,
@@ -443,7 +443,7 @@ const GeoShare = (() => {
       createdAt: place.createdAt,
     }));
     return {
-      title: title || "My List",
+      title: title || "My map",
       places: compactPlaces,
       editable: Boolean(editable),
     };
@@ -480,7 +480,7 @@ const GeoShare = (() => {
       const parsed = tryParse(decompressed);
       if (parsed) {
         return {
-          title: parsed.title || "My List",
+          title: parsed.title || "My map",
           places: normalizePlaces(parsed.places || parsed.p || []),
           editable: Boolean(parsed.editable),
         };
@@ -494,7 +494,7 @@ const GeoShare = (() => {
       const parsed = tryParse(json);
       if (parsed) {
         return {
-          title: parsed.title || "My List",
+          title: parsed.title || "My map",
           places: normalizePlaces(parsed.places || parsed.p || []),
           editable: Boolean(parsed.editable),
         };
@@ -517,11 +517,11 @@ const GeoShare = (() => {
     if (dataProvider) return dataProvider();
     return {
       places: GeoStore?.load ? GeoStore.load() : [],
-      title: GeoStore?.loadTitle ? GeoStore.loadTitle() : "My List",
+      title: GeoStore?.loadTitle ? GeoStore.loadTitle() : "My map",
     };
   };
 
-  const buildGpx = (places = [], title = "My List") => {
+  const buildGpx = (places = [], title = "My map") => {
     const metaTime = new Date().toISOString();
     const wpts = places
       .map((p) => {
@@ -561,11 +561,11 @@ ${wpts}
   const shareAsGpx = () => {
     const { places, title } = getData();
     if (!places.length) {
-      alert("Нет мест для экспорта.");
+      alert("Add some places on the map");
       return;
     }
     const gpx = buildGpx(places, title);
-    const cleanedTitle = (title || "My List").trim().replace(/[\\/:*?"<>|]+/g, "").trim() || "My List";
+    const cleanedTitle = (title || "My map").trim().replace(/[\\/:*?"<>|]+/g, "").trim() || "My map";
     const filename = `${cleanedTitle}.gpx`;
     downloadTextFile(gpx, filename, "application/gpx+xml");
   };
@@ -665,10 +665,12 @@ ${wpts}
     let link = "";
     if (editable) {
       if (!remoteShare?.editUrl) {
-        if (shareQrLabel) {
-          shareQrLabel.textContent = remoteSharePromise ? "Generating edit link..." : "Create edit link to show QR";
+        if (shareQrLabel) shareQrLabel.textContent = "Generating edit link...";
+        const share = await ensureRemoteShare();
+        if (!share?.editUrl) {
+          if (shareQrLabel) shareQrLabel.textContent = "Не удалось создать ссылку.";
+          return;
         }
-        return;
       }
       link = remoteShare.editUrl;
     } else {

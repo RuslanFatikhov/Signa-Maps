@@ -90,3 +90,16 @@ button{
     height: var(--space-8);
 }
 
+
+#listEditToggle{
+    position:absolute;
+    left:16px;
+    
+}
+
+
+#createListBtn{
+    position:absolute;
+    right:16px;
+    
+}

@@ -20,11 +20,11 @@ const GeoStore = (() => {
 
   const loadTitle = () => {
     const title = localStorage.getItem(TITLE_KEY);
-    return title || "My List";
+    return title || "My map";
   };
 
   const saveTitle = (title) => {
-    localStorage.setItem(TITLE_KEY, title || "My List");
+    localStorage.setItem(TITLE_KEY, title || "My map");
   };
 
   const loadLists = () => {
@@ -62,7 +62,7 @@ const GeoStore = (() => {
       if (legacyPlaces == null && legacyTitleRaw == null) {
         return [];
       }
-      const legacyTitle = legacyTitleRaw || "My List";
+      const legacyTitle = legacyTitleRaw || "My map";
       const places = legacyPlaces ? JSON.parse(legacyPlaces) : [];
       const list = {
         id: createId(),

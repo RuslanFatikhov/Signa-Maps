@@ -20,8 +20,8 @@
 
         <!--Header-->
         <div class="header">
-          <h2 id="listTitle" class="prime100">My List</h2>
-          <input id="listTitleInput" class="listTitleInput" type="text" value="My List" style="display:none;">
+          <h2 id="listTitle" class="prime100">My map</h2>
+          <input id="listTitleInput" class="listTitleInput" type="text" value="My map" style="display:none;">
 
         </div>
 
@@ -173,7 +173,13 @@
 
   <aside class="lists-panel" id="listsPanel" aria-hidden="true">
     <header class="sheet__header">
-        <h2 class="lists-panel__title prime-100">My Lists</h2>
+        <span class="hstack gap2">
+          <img class="tofu-icon" src="{{ url_for('static', filename='img/tofu.svg') }}" alt="Tofu icon">
+          <p class="secondary-200">TOFU MAPS</p>
+        </span>
+
+
+        <h2 class="lists-panel__title prime-100" style="margin-top: var(--space-4);">My maps</h2>
 
 
         <button class="btn_icon_ghost lists-panel__close" type="button" id="listsPanelClose" aria-label="Закрыть списки">
@@ -185,10 +191,10 @@
     <div class="lists-panel__toolbar toolbar">
 
       <span class="hstack w100 gap4">
-          <!--Edit list-->
+          <!--Edit map-->
           <button class="btn_icon_ghost gap2" type="button" id="listEditToggle">
             <img src="{{ url_for('static', filename='img/icons/pen.svg') }}" alt="Edit">
-            <p class="secondary-200">Edit lists</p>
+            <p class="secondary-200">Edit maps</p>
           </button>
 
           <span class="hstack w100 gap4">
@@ -196,10 +202,10 @@
             <button class="btn_label_fill_primary" type="button" id="listEditSave" style="display:none;">Save</button>
           </span>
 
-          <!--New list-->
+          <!--New map-->
           <button class="btn_icon_ghost gap2" type="button" id="createListBtn">
-            <img src="{{ url_for('static', filename='img/icons/plus.svg') }}" alt="Create new list">
-            <p class="secondary-200">New list</p>
+            <img src="{{ url_for('static', filename='img/icons/plus.svg') }}" alt="Create New map">
+            <p class="secondary-200">New map</p>
           </button>
       </span>
     </div>
@@ -216,7 +222,7 @@
     <div class="sheet__handle"></div>
     <div class="sheet__content">
       <header class="sheet__header">
-        <h2 class="prime100" id="shareSheetTitle">Share List</h2>
+        <h2 class="prime100" id="shareSheetTitle">Share map</h2>
         <button class="btn_icon_ghost" type="button" id="shareSheetClose" aria-label="Закрыть шторку">
           <img src="{{ url_for('static', filename='img/icons/cross.svg') }}" alt="Close">
         </button>
@@ -226,6 +232,7 @@
       </div>
       <div class="share-qr" id="shareSheetQr" aria-live="polite">
         <div class="share-qr__code" id="shareSheetQrCode"></div>
+        <p class="caption secondary-200" id="shareSheetQrLabel"></p>
       </div>
 
       <div class="sheet__submit sheet__submit--share">
@@ -236,7 +243,7 @@
               <span class="toggle__track" aria-hidden="true"></span>
             </label>
           </div>
-          <button class="btn_label_fill_primary" id="shareListBtn" type="button">Share list</button>
+          <button class="btn_label_fill_primary" id="shareListBtn" type="button">Share map</button>
       </div>
     </div>
 </section>
@@ -354,7 +361,7 @@
       <img src="{{ url_for('static', filename='img/icons/new-list.svg') }}" alt="Edit">
     </button>
 
-    <button class="btn_icon_ghost" id="edit-btn" type="button" title="Edit List">
+    <button class="btn_icon_ghost" id="edit-btn" type="button" title="Edit map">
       <img src="{{ url_for('static', filename='img/icons/pen.svg') }}" alt="Edit">
     </button>
     <button class="btn_icon_ghost" id="share-btn" type="button" title="Share List">

@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let lists = [];
   let currentListId = null;
   let places = [];
-  let savedTitle = "My List";
+  let savedTitle = "My map";
   let undoTimer = null;
   let lastDeleted = null;
   let pendingDeletedIds = new Set();
@@ -52,7 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
       await fetch(`/api/share/${remoteShareId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: list.title || "My List", places: list.places || [] }),
+        body: JSON.stringify({ title: list.title || "My map", places: list.places || [] }),
       });
     } catch (err) {
       console.warn("Remote share save failed", err);
@@ -118,7 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     return {
       id: GeoStore.createId(),
-      title: "My List",
+      title: "My map",
       places,
       createdAt: new Date(now).toISOString(),
     };
@@ -159,7 +159,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const syncFromActiveList = () => {
     const active = getActiveList();
     places = active?.places ? [...active.places] : [];
-    savedTitle = active?.title || "My List";
+    savedTitle = active?.title || "My map";
     GeoEdit.setTitle(savedTitle);
     pendingDeletedIds = new Set();
     if (undoBanner) undoBanner.style.display = "none";
@@ -275,7 +275,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const ensureLists = () => {
     let usingOnboarding = false;
     if (isRemoteShare) {
-      const remoteTitle = remoteData?.title || "My List";
+      const remoteTitle = remoteData?.title || "My map";
       const remotePlaces = remoteData?.places || [];
       lists = [
         {
@@ -291,7 +291,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (readOnly) {
       const single = {
         id: "shared",
-        title: sharedPayload?.title || "My List",
+        title: sharedPayload?.title || "My map",
         places: sharedPayload?.places || [],
         createdAt: sharedPayload?.createdAt || new Date().toISOString(),
       };
@@ -308,7 +308,7 @@ document.addEventListener("DOMContentLoaded", () => {
         lists = [
           {
             id: sharedId,
-            title: sharedPayload.title || "My List",
+            title: sharedPayload.title || "My map",
             places: sharedPayload.places || [],
             createdAt: new Date().toISOString(),
           },
@@ -349,7 +349,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (readOnly || isRemoteShare) return;
     const collection = listEditMode ? listDrafts : lists;
     const nextIndex = collection.length + 1;
-    const title = `Новый список ${nextIndex}`;
+    const title = `New map ${nextIndex}`;
     const list = {
       id: GeoStore.createId(),
       title,
@@ -376,7 +376,7 @@ document.addEventListener("DOMContentLoaded", () => {
   ensureLists();
   const activeList = getActiveList();
   places = activeList?.places ? [...activeList.places] : [];
-  savedTitle = activeList?.title || "My List";
+  savedTitle = activeList?.title || "My map";
   setListEditToolbar(false);
 
   const handlers = {
@@ -407,7 +407,7 @@ document.addEventListener("DOMContentLoaded", () => {
     title: savedTitle,
     onSave: (title) => {
       if (readOnly) return;
-      const nextTitle = title || "My List";
+      const nextTitle = title || "My map";
       savedTitle = nextTitle;
       updateActiveList((list) => ({ ...list, title: nextTitle }));
       renderListsPanel();

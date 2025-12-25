@@ -4,17 +4,17 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#101827",
-  "theme_color": "#101827",
+  "background_color": "#fefefe",
+  "theme_color": "#fefefe",
   "icons": [
     {
-      "src": "/static/img/app-icon.svg",
+      "src": "/static/img/tofu.svg",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/static/img/app-icon.svg",
+      "src": "/static/img/tofu.svg",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "maskable"

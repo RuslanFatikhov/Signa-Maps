@@ -42,7 +42,7 @@ def create_app() -> Flask:
     @app.post("/api/share")
     def create_share():
         payload = request.get_json(silent=True) or {}
-        title = payload.get("title") or "My List"
+        title = payload.get("title") or "My map"
         places = payload.get("places") or []
         share_id = uuid.uuid4().hex
         now = datetime.now(timezone.utc).isoformat()
@@ -68,7 +68,7 @@ def create_app() -> Flask:
         return jsonify(
             {
                 "id": share_id,
-                "title": data.get("title") or "My List",
+                "title": data.get("title") or "My map",
                 "places": data.get("places") or [],
                 "updatedAt": row["updated_at"],
             }
@@ -77,7 +77,7 @@ def create_app() -> Flask:
     @app.put("/api/share/<share_id>")
     def update_share(share_id: str):
         payload = request.get_json(silent=True) or {}
-        title = payload.get("title") or "My List"
+        title = payload.get("title") or "My map"
         places = payload.get("places") or []
         now = datetime.now(timezone.utc).isoformat()
         data = json.dumps({"title": title, "places": places})
