@@ -33,6 +33,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let dragHandleId = null;
   let remoteSaveTimer = null;
   let remoteData = null;
+  let listsWithPlaces = new Set();
 
   const loadRemoteShare = async () => {
     if (!remoteShareId) return null;
@@ -370,6 +371,7 @@ document.addEventListener("DOMContentLoaded", () => {
       renderListsPanel();
       renderPlaces();
       closeListsPanel();
+      GeoAnalytics?.track?.("list_created");
     }
   };
 
@@ -377,6 +379,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const activeList = getActiveList();
   places = activeList?.places ? [...activeList.places] : [];
   savedTitle = activeList?.title || "My map";
+  listsWithPlaces = new Set(
+    lists.filter((list) => (list.places || []).length > 0).map((list) => list.id)
+  );
   setListEditToolbar(false);
 
   const handlers = {
@@ -457,6 +462,9 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!readOnly) {
     GeoForm.bind({
       onSubmit: ({ title, lat, lng, note, photos = [], address, osm }) => {
+        const wasEmpty = places.length === 0;
+        const listId = currentListId;
+        const alreadyNonEmpty = listId ? listsWithPlaces.has(listId) : false;
         places = [
           ...places,
           {
@@ -473,6 +481,11 @@ document.addEventListener("DOMContentLoaded", () => {
         ];
         updateActiveList((list) => ({ ...list, places }));
         renderPlaces();
+        GeoAnalytics?.track?.("place_added");
+        if (wasEmpty && listId && !alreadyNonEmpty) {
+          GeoAnalytics?.track?.("list_became_non_empty");
+          listsWithPlaces.add(listId);
+        }
       },
     });
   } else {

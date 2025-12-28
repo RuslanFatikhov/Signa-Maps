@@ -593,6 +593,7 @@ ${wpts}
     GeoToast?.show?.({
       title: "Link copied",
     });
+    GeoAnalytics?.track?.("share_link_created");
   };
 
   const createRemoteShare = async () => {
