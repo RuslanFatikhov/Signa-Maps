@@ -434,6 +434,11 @@ document.addEventListener("DOMContentLoaded", () => {
     onSelect: (place) => {
       GeoView.open(place);
     },
+    onPick: readOnly
+      ? null
+      : ({ lat, lng }) => {
+          GeoForm.handleMapPick({ lat, lng });
+        },
   });
 
   GeoView.configure({

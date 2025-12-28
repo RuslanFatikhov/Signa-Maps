@@ -9,7 +9,8 @@ from flask import Flask, abort, jsonify, render_template, request, url_for
 
 def create_app() -> Flask:
     app = Flask(__name__, static_folder="static")
-    db_path = "/data/geonotion.db"
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    db_path = os.environ.get("DB_PATH", os.path.join(BASE_DIR, "data", "geonotion.db"))
 
     def get_db() -> sqlite3.Connection:
         conn = sqlite3.connect(db_path)
@@ -34,6 +35,10 @@ def create_app() -> Flask:
     @app.route("/")
     def index():
         return render_template("index.html")
+
+    @app.route("/about")
+    def about():
+        return render_template("about.html")
 
     @app.route("/api/health")
     def health():

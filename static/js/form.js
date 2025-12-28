@@ -18,7 +18,6 @@ const GeoForm = (() => {
   const sheetMapEl = document.getElementById("sheetMap");
   const sheetMapWrap = document.getElementById("sheetMapWrap");
   const sheetMapFullToggle = document.getElementById("sheetMapFullToggle");
-  const sheetMyLocation = document.getElementById("sheetMyLocation");
   const searchSheet = document.getElementById("searchSheet");
   const searchSheetBackdrop = document.getElementById("searchSheetBackdrop");
   const searchSheetClose = document.getElementById("searchSheetClose");
@@ -211,22 +210,6 @@ const GeoForm = (() => {
     }
   };
 
-  const focusOnUser = () => {
-    if (!navigator.geolocation) {
-      showError("Геолокация недоступна в этом браузере.");
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        handleMapPick({ lat: latitude, lng: longitude });
-      },
-      () => {
-        showError("Не получилось получить геопозицию.");
-      },
-      { enableHighAccuracy: true, timeout: 8000 }
-    );
-  };
 
   const bytesFromDataUrl = (dataUrl) => Math.ceil((dataUrl.length * 3) / 4);
 
@@ -438,7 +421,7 @@ const GeoForm = (() => {
     const resolvedTitle =
       (titleInput?.value || "").trim() ||
       lastSuggestedTitle ||
-      "Без названия";
+      "Untitled";
     const note = (noteInput?.value || "").trim();
 
     const photos = [];
@@ -530,13 +513,6 @@ const GeoForm = (() => {
       sheetMapFullToggle.addEventListener("click", () => {
         ensureSheetMap();
         setSheetFullscreen(!sheetMapFullscreen);
-      });
-    }
-
-    if (sheetMyLocation) {
-      sheetMyLocation.addEventListener("click", () => {
-        ensureSheetMap();
-        focusOnUser();
       });
     }
 

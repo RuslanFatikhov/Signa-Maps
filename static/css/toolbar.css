@@ -23,7 +23,7 @@
     width: 100%;
     height: calc(92px + var(--safe-bottom));
     padding-bottom: calc(var(--space-7) + var(--safe-bottom));
-    z-index: 99;
+    z-index: 9;
     transition: transform 0.15s ease;
     will-change: transform;
 }
@@ -31,8 +31,9 @@
 
 
 @media screen and (min-width: 768px) {
-    .toolbar, .toolbar--fixed-main{
-        width: 390px;
+
+    .toolbar--fixed-main{
+        max-width: 390px !important;
     }
 
     .toolbar--fixed-main{

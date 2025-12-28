@@ -2,6 +2,8 @@ const GeoMap = (() => {
   let map;
   let markers = [];
   let onSelectCb;
+  let onPickCb;
+  let ignoreMapClickUntil = 0;
 
   const ensureMapboxToken = () => {
     if (typeof mapboxgl === "undefined") return;
@@ -19,10 +21,11 @@ const GeoMap = (() => {
     }
   };
 
-  const init = ({ onSelect } = {}) => {
+  const init = ({ onSelect, onPick } = {}) => {
     const mapContainer = document.getElementById("map");
     if (!mapContainer) return;
     onSelectCb = onSelect;
+    onPickCb = onPick;
 
     if (typeof mapboxgl === "undefined") {
       showMessage("Map failed to load. Проверьте подключение.");
@@ -49,6 +52,12 @@ const GeoMap = (() => {
       console.error("Map error:", e && e.error);
       showMessage("Карта не загрузилась. Проверьте интернет.");
     });
+
+    map.on("click", (e) => {
+      if (!onPickCb) return;
+      if (Date.now() < ignoreMapClickUntil) return;
+      onPickCb({ lat: e.lngLat.lat, lng: e.lngLat.lng });
+    });
   };
 
   const syncMarkers = (places = []) => {
@@ -66,7 +75,9 @@ const GeoMap = (() => {
       marker.addTo(map);
       const el = marker.getElement();
       el.style.cursor = "pointer";
-      el.addEventListener("click", () => {
+      el.addEventListener("click", (event) => {
+        ignoreMapClickUntil = Date.now() + 250;
+        event.stopPropagation();
         if (onSelectCb) onSelectCb(place);
       });
       markers.push(marker);

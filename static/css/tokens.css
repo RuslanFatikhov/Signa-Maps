@@ -23,6 +23,10 @@
     padding-right: var(--space-4) !important;
 }
 
+.pd_t4{
+    padding-top: var(--space-4) !important;
+}
+
 .hstack{
     display: flex !important;
     flex-direction: row !important;
@@ -59,4 +63,8 @@
 
 .fs{
     align-items: flex-start !important;
+}
+
+.aic{
+    align-items: center !important;
 }

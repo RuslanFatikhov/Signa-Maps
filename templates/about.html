@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block head_extra %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/about.css') }}">
+{% endblock %}
+{% block title %}About · TOFU Maps{% endblock %}
+
+{% block content %}
+<main class="about">
+
+  <!--Cover-->
+  <div class="about_cover">
+    <img class="tofu_logo_about" src="{{ url_for('static', filename='img/tofu-br.svg') }}" alt="tofu logo">
+    <h1 class="prime-100">Your places<br>In one place</h1>
+  </div>
+
+
+  <!--Profits-->
+  <div class="about_profit vstack gap5">
+
+      <span class="hstack gap4 aic">
+        <img class="profit_icon" src="{{ url_for('static', filename='img/about/pin.png') }}" alt="easy icon">
+        
+        <span class="vstack gap2">
+          <h3 class="prime-100">Your places on a map</h3>
+          <p class="prime-100">Create your own maps with places you care about</p>
+        </span>
+      </span>
+
+            
+
+      <span class="hstack gap4 aic">
+        <img class="profit_icon" src="{{ url_for('static', filename='img/about/list.png') }}" alt="easy icon">
+        <span class="vstack gap2">
+          <h3 class="prime-100">Lists that belong to you</h3>
+          <p class="prime-100">Organize places into lists. Update them anytime</p>
+        </span>
+      </span>
+
+      <span class="hstack gap4 aic">
+        <img class="profit_icon" src="{{ url_for('static', filename='img/about/link.png') }}" alt="easy icon">
+        <span class="vstack gap2">
+          <h3 class="prime-100">Share when you want</h3>
+          <p class="prime-100">Make a map public via link or QR code</p>
+        </span>
+      </span>
+
+        
+
+
+  </div>
+
+    <!--What can you safe-->                    
+  <div class="about_safe vstack gap4 aic">
+    <h2 class="prime-100">What you can save?</h2>
+    <div class="about-scroll">
+
+
+      <div class="about-safe-card" id="about-c1">
+        <img src="{{ url_for('static', filename='img/about/safe1.png') }}" alt="cafe icon">
+        <p class="prime-100 tac">Cafés you like</p>
+      </div>
+
+      <div class="about-safe-card" id="about-c2">
+        <img src="{{ url_for('static', filename='img/about/safe2.png') }}" alt="cafe icon">
+        <p class="prime-100 tac">Places you’ve been to</p>
+      </div>
+
+      <div class="about-safe-card" id="about-c3">
+        <img src="{{ url_for('static', filename='img/about/safe3.png') }}" alt="cafe icon">
+        <p class="prime-100 tac">Spots you want to visit</p>
+      </div>
+
+      <div class="about-safe-card" id="about-c4">
+        <img src="{{ url_for('static', filename='img/about/safe4.png') }}" alt="cafe icon">
+        <p class="prime-100 tac">Stores, museums, parks</p>
+      </div>
+
+      <div class="about-safe-card" id="about-c5">
+        <img src="{{ url_for('static', filename='img/about/safe5.png') }}" alt="cafe icon">
+        <p class="prime-100 tac">Any place you want to remember</p>
+      </div>
+      
+
+    </div>
+  </div>
+
+
+  <!--Your space-->
+  <div class="about_space">
+    <h2 class="prime-100 tac">Your maps<br>belong to you</h2>
+    <span class="vstack gap5 w100">
+      <p class="prime-100">No feeds</p>
+      <p class="prime-100">No recommendations</p>
+      <p class="prime-100">Nothing is promoted or ranked</p>
+    </span>
+  </div> 
+                     
+                                                  
+  <div class="about-cta">
+    <a  href="/" class="btn_label_fill_primary">Create your first map</a>
+  </div>
+
+  <!--Feedback-->
+  <div class="about_feedback">
+    <h2 class="prime-100">Feedback</h2>
+
+    <p class="prime-100">Found a bug or have an idea? Let us know.</p>
+    <a class="btn_label_secondary_fill" href="https://tally.so/r/D4K8MN" target="_blank" class="accent-100">Send feedback</a>
+  </div>
+</main>
+{% endblock %}

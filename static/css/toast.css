@@ -6,7 +6,7 @@
     opacity: 0;
     pointer-events: none;
     transition: opacity 200ms ease, transform 200ms ease;
-    z-index: 120;
+    z-index: 12000;
     width: min(480px, calc(100% - 24px));
 }
 

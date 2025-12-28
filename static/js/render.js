@@ -36,7 +36,7 @@ const GeoRender = (() => {
     placesById.clear();
 
     if (!places.length) {
-      placesEl.innerHTML = '<div class="empty_state_list"><p>Add first place in your list</p><img src="/static/img/icons/arrow_empty.svg" alt="Empty state"></div>';
+      placesEl.innerHTML = '<div class="empty_state_list"><p>Add the first place to your list</p><img src="/static/img/icons/arrow_empty.svg" alt="Empty state"></div>';
       GeoMap.syncMarkers([]);
       return;
     }

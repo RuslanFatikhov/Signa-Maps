@@ -26,6 +26,15 @@ const GeoView = (() => {
   const serviceButtons = document.querySelectorAll("[data-map-service]");
   const mapStyleUrl = window.MAPBOX_STYLE_URL || "mapbox://styles/mapbox/streets-v12";
 
+  if (sheet) {
+    sheet.classList.remove("is-open");
+    sheet.setAttribute("aria-hidden", "true");
+  }
+  if (backdrop) {
+    backdrop.classList.remove("is-open");
+    backdrop.setAttribute("aria-hidden", "true");
+  }
+
   let currentPlace = null;
   let readOnly = false;
   let handlers = { onEdit: null, onShare: null };
@@ -300,7 +309,7 @@ const GeoView = (() => {
     if (!place) return;
     currentPlace = place;
 
-    if (titleEl) titleEl.textContent = place.title || "Без названия";
+    if (titleEl) titleEl.textContent = place.title || "Untitled";
     const mapName = getMapName(place);
     if (mapLabelEl) mapLabelEl.textContent = mapName;
     if (addressEl) addressEl.textContent = formatAddress(place);

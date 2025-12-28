@@ -525,7 +525,7 @@ const GeoShare = (() => {
     const metaTime = new Date().toISOString();
     const wpts = places
       .map((p) => {
-        const name = escapeXml(p.title || "Без названия");
+        const name = escapeXml(p.title || "Untitled");
         const address = p.address || `${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`;
         const note = p.note ? `${p.note}\n${address}` : address;
         const desc = escapeXml(note);
