@@ -1,19 +1,40 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- PWA -->
   <meta name="theme-color" content="#101827">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- Manifest -->
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-  <link rel="icon" href="{{ url_for('static', filename='img/app-icon.svg') }}">
-  <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/app-icon.svg') }}">
+
+  <!-- iOS Home Screen icon (CRITICAL) -->
+  <link rel="apple-touch-icon" sizes="180x180"
+        href="{{ url_for('static', filename='img/apple-touch-icon.png') }}">
+
+  <!-- Favicons -->
+  <link rel="icon" type="image/png" sizes="32x32"
+        href="{{ url_for('static', filename='img/favicon-32x32.png') }}">
+  <link rel="icon" type="image/png" sizes="16x16"
+        href="{{ url_for('static', filename='img/favicon-16x16.png') }}">
+  <link rel="icon" type="image/x-icon"
+        href="{{ url_for('static', filename='img/favicon.ico') }}">
+
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Mapbox -->
   <link href="https://api.mapbox.com/mapbox-gl-js/v3.5.1/mapbox-gl.css" rel="stylesheet">
+
+  <!-- Styles -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/reset.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/colors.css') }}">
@@ -28,9 +49,12 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/field.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/search.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/toast.css') }}">
+
   <title>{% block title %}TOFU Maps{% endblock %}</title>
   {% block head_extra %}{% endblock %}
 </head>
+
+
 <body>
   {% block content %}{% endblock %}
 

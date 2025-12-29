@@ -82,7 +82,7 @@
     flex-direction: column;
     gap: var(--space-4);
     overflow-y: scroll;
-    padding-bottom: calc(var(--space-10) + var(--safe-bottom));
+    padding-bottom: calc(var(--space-6) + var(--safe-bottom));
 }
 
 .sheet__submit{
@@ -90,7 +90,7 @@
     bottom: 0px;
     width: 100%;
     padding: var(--space-4);
-    padding-bottom: calc(var(--space-4) + var(--safe-bottom));
+    padding-bottom: calc(var(--space-6) + var(--safe-bottom));
     background: var(--white100);
     border-top: 0.5px solid var(--black025);
     z-index: 101;
@@ -100,6 +100,7 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
+    padding-bottom: calc(var(--space-6) + var(--safe-bottom));
 }
 
 .share-toggle{

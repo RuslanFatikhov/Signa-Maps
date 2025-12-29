@@ -9,6 +9,7 @@ const CORE_ASSETS = [
   "/static/css/input.css",
   "/static/css/button.css",
   "/static/css/header.css",
+  "/static/css/about.css",
   "/static/css/main.css",
   "/static/css/toolbar.css",
   "/static/css/map.css",
