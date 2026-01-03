@@ -158,3 +158,70 @@ h1{
     padding: var(--space-5);
     background: linear-gradient(180deg, #fefefe00 0%, #fefefe 100%);
 }
+
+.changelog-trigger{
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+.changelog-modal{
+    position: fixed;
+    inset: 0;
+    display: none;
+    z-index: 120;
+}
+
+.changelog-modal.is-open{
+    display: block;
+}
+
+.changelog-modal__backdrop{
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+}
+
+.changelog-modal__dialog{
+    position: relative;
+    background: var(--white100);
+    border-radius: var(--space-4);
+    max-width: 520px;
+    margin: 12vh auto;
+    padding: var(--space-5);
+    width: calc(100% - (var(--space-4) * 2));
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.2);
+}
+
+.changelog-modal__header{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+}
+
+.changelog-modal__close{
+    background: transparent;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 999px;
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.changelog-modal__content{
+    margin-top: var(--space-3);
+    max-height: 60vh;
+    overflow: auto;
+    background: var(--white200);
+    border-radius: var(--space-3);
+    padding: var(--space-4);
+    white-space: pre-wrap;
+    font-size: 14px;
+    line-height: 1.5;
+}

@@ -135,8 +135,73 @@
 
 
   <footer class="vstack gap2 aic" style="margin-bottom: var(--space-5);">
-    <span class="hstack gap2"><p class="secondary200">TOFOMAP</p><p class="secondary200">1.0</p></span>
+    <button id="changelogs" class="hstack gap2 changelog-trigger" type="button" aria-haspopup="dialog" aria-controls="changelog-modal">
+      <p class="secondary200">TOFU MAPS</p>
+      <p class="secondary200">1.1</p>
+    </button>
     <p class="secondary200">2025</p>
   </footer>
 </main>
+
+<div id="changelog-modal" class="changelog-modal" aria-hidden="true">
+  <div class="changelog-modal__backdrop" data-close="changelog"></div>
+  <div class="changelog-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="changelog-title">
+    <div class="changelog-modal__header">
+      <h3 id="changelog-title" class="prime-100">Changelog</h3>
+      <button class="changelog-modal__close" type="button" aria-label="Close changelog">x</button>
+    </div>
+    <pre class="changelog-modal__content">{{ changelog_text }}</pre>
+  </div>
+</div>
+
+<script>
+  (() => {
+    const trigger = document.getElementById("changelogs");
+    const modal = document.getElementById("changelog-modal");
+    if (!trigger || !modal) {
+      return;
+    }
+
+    const closeButton = modal.querySelector(".changelog-modal__close");
+    const backdrop = modal.querySelector(".changelog-modal__backdrop");
+
+    const openModal = () => {
+      modal.classList.add("is-open");
+      modal.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+      if (closeButton) {
+        closeButton.focus();
+      }
+    };
+
+    const closeModal = () => {
+      modal.classList.remove("is-open");
+      modal.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+      trigger.focus();
+    };
+
+    trigger.addEventListener("click", openModal);
+    trigger.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        openModal();
+      }
+    });
+
+    if (closeButton) {
+      closeButton.addEventListener("click", closeModal);
+    }
+
+    if (backdrop) {
+      backdrop.addEventListener("click", closeModal);
+    }
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && modal.classList.contains("is-open")) {
+        closeModal();
+      }
+    });
+  })();
+</script>
 {% endblock %}

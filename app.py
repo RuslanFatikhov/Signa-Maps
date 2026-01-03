@@ -96,7 +96,13 @@ def create_app() -> Flask:
 
     @app.route("/about")
     def about():
-        return render_template("about.html")
+        changelog_path = os.path.join(BASE_DIR, "CHANGELOG.md")
+        try:
+            with open(changelog_path, "r", encoding="utf-8") as changelog_file:
+                changelog_text = changelog_file.read()
+        except OSError:
+            changelog_text = "Changelog is unavailable right now."
+        return render_template("about.html", changelog_text=changelog_text)
 
     @app.route("/api/health")
     def health():
