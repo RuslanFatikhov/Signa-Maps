@@ -26,17 +26,25 @@ const GeoRender = (() => {
     listenersBound = true;
   };
 
-  const render = (places = [], { onDelete, editing = false } = {}) => {
+  const render = (
+    places = [],
+    { onDelete, editing = false, emptyMessage = "", totalCount = null } = {}
+  ) => {
     if (!placesEl || !placeCountEl) return;
 
     bindListEvents();
     onDeleteHandler = onDelete || null;
-    placeCountEl.textContent = `${places.length} saved spot${places.length === 1 ? "" : "s"}`;
+    const countLabel =
+      totalCount != null && totalCount !== places.length
+        ? `${places.length}/${totalCount} saved spots`
+        : `${places.length} saved spot${places.length === 1 ? "" : "s"}`;
+    placeCountEl.textContent = countLabel;
     placesEl.innerHTML = "";
     placesById.clear();
 
     if (!places.length) {
-      placesEl.innerHTML = '<div class="empty_state_list"><p>Add the first place to your list</p><img src="/static/img/icons/arrow_empty.svg" alt="Empty state"></div>';
+      const message = emptyMessage || "Add the first place to your list";
+      placesEl.innerHTML = `<div class="empty_state_list"><p>${message}</p><img src="/static/img/icons/arrow_empty.svg" alt="Empty state"></div>`;
       GeoMap.syncMarkers([]);
       return;
     }

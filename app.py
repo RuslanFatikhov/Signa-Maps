@@ -88,6 +88,10 @@ def create_app() -> Flask:
     ensure_db()
     ensure_analytics()
 
+    @app.route("/api/health")
+    def health():
+        return {"status": "ok"}
+
     @app.route("/")
     def index():
         if request.args.get("share_id") or request.args.get("share"):
@@ -103,10 +107,6 @@ def create_app() -> Flask:
         except OSError:
             changelog_text = "Changelog is unavailable right now."
         return render_template("about.html", changelog_text=changelog_text)
-
-    @app.route("/api/health")
-    def health():
-        return {"status": "ok"}
 
     @app.post("/api/share")
     def create_share():
@@ -170,22 +170,6 @@ def create_app() -> Flask:
             abort(400)
         increment_analytics(metric)
         return jsonify({"ok": True})
-
-    @app.get("/admin/analytics")
-    def admin_analytics():
-        if not is_admin_request():
-            abort(403)
-        data = read_analytics()
-        server_time = datetime.now(timezone.utc).isoformat()
-        return render_template("admin_analytics.html", data=data, server_time=server_time)
-
-    @app.get("/admin/analytics/data")
-    def admin_analytics_data():
-        if not is_admin_request():
-            abort(403)
-        data = read_analytics()
-        server_time = datetime.now(timezone.utc).isoformat()
-        return jsonify({"data": data, "serverTime": server_time})
 
     return app
 

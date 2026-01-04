@@ -179,12 +179,19 @@ const GeoView = (() => {
     const coords = `${lat.toFixed(6)},${lng.toFixed(6)}`;
     const title = place.title || "Метка";
     switch (service) {
-      case "2gis":
-        return `https://2gis.com/?query=${encodeURIComponent(coords)}%20${encodeURIComponent(title)}`;
+      case "2gis": {
+        const ll = `${lng.toFixed(6)},${lat.toFixed(6)}`;
+        const query = `${lat.toFixed(6)} ${lng.toFixed(6)}`;
+        return `https://2gis.kz/almaty/search/${encodeURIComponent(query)}?m=${encodeURIComponent(ll)}%2F16`;
+      }
       case "apple":
         return `https://maps.apple.com/?ll=${coords}&q=${encodeURIComponent(title)}`;
       case "google":
         return `https://www.google.com/maps/search/?api=1&query=${coords}`;
+      case "organic": {
+        const query = `${lat.toFixed(6)},${lng.toFixed(6)}(${title})`;
+        return `geo:${coords}?q=${encodeURIComponent(query)}`;
+      }
       case "yandex": {
         const ll = `${lng.toFixed(6)},${lat.toFixed(6)}`;
         return `https://yandex.ru/maps/?pt=${ll}&z=16&text=${encodeURIComponent(title)}`;

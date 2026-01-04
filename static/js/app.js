@@ -1,12 +1,10 @@
 document.addEventListener("DOMContentLoaded", () => {
   const init = async () => {
-    const params = new URLSearchParams(window.location.search);
-    const remoteShareId = params.get("share_id");
-    const remoteEditable = params.get("editable") === "1";
-    const isRemoteShare = Boolean(remoteShareId);
-    const sharedParam = params.get("share");
-    const sharedPayload = sharedParam && GeoShare?.decodePayload ? GeoShare.decodePayload(sharedParam) : null;
-    const readOnly = isRemoteShare ? !remoteEditable : sharedPayload ? !sharedPayload.editable : false;
+    const route = { url: new URL(window.location.href), hash: window.location.hash || "" };
+    let remoteShareId = null;
+    let remoteEditable = false;
+    let isRemoteShare = false;
+    let readOnly = false;
 
   const undoBanner = document.getElementById("undoBanner");
   const undoText = document.getElementById("undoText");
@@ -19,6 +17,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const listEditSave = document.getElementById("listEditSave");
   const listEditCancel = document.getElementById("listEditCancel");
   const listToggleBtn = document.getElementById("listToggleBtn");
+  const listSearch = document.getElementById("listSearch");
+  const listSearchInput = document.getElementById("listSearchInput");
 
   let lists = [];
   let currentListId = null;
@@ -32,13 +32,13 @@ document.addEventListener("DOMContentLoaded", () => {
   let draggingListId = null;
   let dragHandleId = null;
   let remoteSaveTimer = null;
-  let remoteData = null;
   let listsWithPlaces = new Set();
+  let listSearchQuery = "";
 
-  const loadRemoteShare = async () => {
-    if (!remoteShareId) return null;
+  const loadRemoteShare = async (shareId) => {
+    if (!shareId) return null;
     try {
-      const response = await fetch(`/api/share/${remoteShareId}`);
+      const response = await fetch(`/api/share/${shareId}`);
       if (!response.ok) throw new Error("Remote share load failed");
       return await response.json();
     } catch (err) {
@@ -64,6 +64,118 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!remoteShareId || !remoteEditable) return;
     if (remoteSaveTimer) clearTimeout(remoteSaveTimer);
     remoteSaveTimer = setTimeout(() => saveRemoteShare(list), 400);
+  };
+
+  const parseHashRoute = (hashValue) => {
+    if (!hashValue || hashValue === "#") {
+      return { mode: null, listId: null, params: new URLSearchParams() };
+    }
+    const trimmed = hashValue.startsWith("#") ? hashValue.slice(1) : hashValue;
+    const [path, query = ""] = trimmed.split("?");
+    const parts = path.split("/").filter(Boolean);
+    return {
+      mode: parts[0] || null,
+      listId: parts[1] || null,
+      params: new URLSearchParams(query),
+    };
+  };
+
+  const resolveList = async (routeInfo) => {
+    const searchParams = routeInfo.url.searchParams;
+    const hashRoute = parseHashRoute(routeInfo.hash);
+    const hashShareId = hashRoute.params.get("share_id");
+    const hashShareParam = hashRoute.params.get("share");
+    const hashEditable = hashRoute.params.get("editable") === "1";
+    const searchShareId = searchParams.get("share_id");
+    const searchShareParam = searchParams.get("share");
+    const searchEditable = searchParams.get("editable") === "1";
+
+    const routeShareParam = hashShareParam || searchShareParam;
+    const decodedPayload =
+      routeShareParam && GeoShare?.decodePayload ? GeoShare.decodePayload(routeShareParam) : null;
+    const routeShareId = hashShareId || searchShareId || (!decodedPayload ? routeShareParam : null); // backward compatible
+    const routeEditable = hashEditable || searchEditable;
+    const isLocalMode = hashRoute.mode === "local";
+
+    if (routeShareId) {
+      const remoteData = await loadRemoteShare(routeShareId);
+      if (remoteData) {
+        const list = {
+          id: routeShareId,
+          title: remoteData.title || "My map",
+          places: remoteData.places || [],
+          createdAt: remoteData.updatedAt || new Date().toISOString(),
+        };
+        GeoStore.saveLists([list]);
+        GeoStore.saveActiveListId(list.id);
+        return {
+          lists: [list],
+          currentListId: list.id,
+          readOnly: !routeEditable,
+          isRemoteShare: true,
+          remoteShareId: routeShareId,
+          remoteEditable: routeEditable,
+          sharedParam: null,
+          sharedPayload: null,
+        };
+      }
+      return {
+        lists: [],
+        currentListId: null,
+        readOnly: !routeEditable,
+        isRemoteShare: true,
+        remoteShareId: routeShareId,
+        remoteEditable: routeEditable,
+        sharedParam: null,
+        sharedPayload: null,
+      };
+    }
+
+    if (decodedPayload) {
+      const list = {
+        id: "shared",
+        title: decodedPayload.title || "My map",
+        places: decodedPayload.places || [],
+        createdAt: decodedPayload.createdAt || new Date().toISOString(),
+      };
+      return {
+        lists: [list],
+        currentListId: list.id,
+        readOnly: !decodedPayload.editable,
+        isRemoteShare: false,
+        remoteShareId: null,
+        remoteEditable: false,
+        sharedParam: routeShareParam, // backward compatible
+        sharedPayload: decodedPayload,
+      };
+    }
+
+    if (isLocalMode || (!routeShareId && !decodedPayload)) {
+      const localLists = GeoStore.loadLists();
+      const activeId = GeoStore.loadActiveListId();
+      const resolvedId = localLists.find((l) => l.id === activeId)?.id || localLists[0]?.id || null;
+      return {
+        lists: localLists,
+        currentListId: resolvedId,
+        readOnly: false,
+        isRemoteShare: false,
+        remoteShareId: null,
+        remoteEditable: false,
+        sharedParam: null,
+        sharedPayload: null,
+      };
+    }
+
+    return {
+      lists: [],
+      currentListId: null,
+      readOnly: false,
+      isRemoteShare: false,
+      remoteShareId: null,
+      remoteEditable: false,
+      sharedParam: null,
+      sharedPayload: null,
+    };
   };
 
   const createOnboardingList = () => {
@@ -125,10 +237,6 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   };
 
-  if (isRemoteShare) {
-    remoteData = await loadRemoteShare();
-  }
-
   const closeListsPanel = () => {
     document.body.classList.remove("lists-open");
     listsPanel?.setAttribute("aria-hidden", "true");
@@ -137,9 +245,43 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const getVisiblePlaces = () => places.filter((p) => !pendingDeletedIds.has(p.id));
 
+  const filterPlaces = (items) => {
+    const query = listSearchQuery.trim().toLowerCase();
+    if (!query) return items;
+    return items.filter((place) => {
+      const haystack = [
+        place.title || "",
+        place.address || "",
+        place.note || "",
+      ]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(query);
+    });
+  };
+
   const renderPlaces = () => {
     const visiblePlaces = getVisiblePlaces();
-    GeoRender.render(visiblePlaces, { onDelete: handlers.onDelete, editing: !readOnly && GeoEdit.isEditing() });
+    const totalCount = visiblePlaces.length;
+    const showSearch = totalCount > 10;
+    if (listSearch) listSearch.style.display = showSearch ? "" : "none";
+    if (!showSearch && listSearchQuery) {
+      listSearchQuery = "";
+      if (listSearchInput) listSearchInput.value = "";
+    }
+    const filteredPlaces = filterPlaces(visiblePlaces);
+    const emptyMessage =
+      currentListId == null
+        ? "Open a link or create a new share"
+        : listSearchQuery
+          ? "Ничего не найдено"
+          : "";
+    GeoRender.render(filteredPlaces, {
+      onDelete: handlers.onDelete,
+      editing: !readOnly && GeoEdit.isEditing(),
+      emptyMessage,
+      totalCount,
+    });
   };
 
   const updateActiveList = (updater) => {
@@ -163,6 +305,8 @@ document.addEventListener("DOMContentLoaded", () => {
     savedTitle = active?.title || "My map";
     GeoEdit.setTitle(savedTitle);
     pendingDeletedIds = new Set();
+    listSearchQuery = "";
+    if (listSearchInput) listSearchInput.value = "";
     if (undoBanner) undoBanner.style.display = "none";
     renderPlaces();
   };
@@ -264,75 +408,14 @@ document.addEventListener("DOMContentLoaded", () => {
     renderListsPanel();
   };
 
-  const hashShareParam = (value = "") => {
-    let hash = 0;
-    for (let i = 0; i < value.length; i += 1) {
-      hash = (hash << 5) - hash + value.charCodeAt(i);
-      hash |= 0;
-    }
-    return `shared-${Math.abs(hash)}`;
-  };
-
-  const ensureLists = () => {
-    let usingOnboarding = false;
-    if (isRemoteShare) {
-      const remoteTitle = remoteData?.title || "My map";
-      const remotePlaces = remoteData?.places || [];
-      lists = [
-        {
-          id: remoteShareId,
-          title: remoteTitle,
-          places: remotePlaces,
-          createdAt: remoteData?.updatedAt || new Date().toISOString(),
-        },
-      ];
-      currentListId = remoteShareId;
-      return;
-    }
-    if (readOnly) {
-      const single = {
-        id: "shared",
-        title: sharedPayload?.title || "My map",
-        places: sharedPayload?.places || [],
-        createdAt: sharedPayload?.createdAt || new Date().toISOString(),
-      };
-      lists = [single];
-      currentListId = single.id;
-      return;
-    }
-
-    lists = GeoStore.loadLists();
-    if (sharedPayload?.editable && sharedParam) {
-      const sharedId = hashShareParam(sharedParam);
-      const exists = lists.find((l) => l.id === sharedId);
-      if (!exists) {
-        lists = [
-          {
-            id: sharedId,
-            title: sharedPayload.title || "My map",
-            places: sharedPayload.places || [],
-            createdAt: new Date().toISOString(),
-          },
-          ...lists,
-        ];
-        GeoStore.saveLists(lists);
-      }
-      currentListId = sharedId;
-      GeoStore.saveActiveListId(currentListId);
-    }
-    if (!lists.length) {
-      const onboardingList = createOnboardingList();
-      lists = [onboardingList];
-      currentListId = onboardingList.id;
-      usingOnboarding = true;
-    }
-    if (!currentListId) {
-      const activeId = GeoStore.loadActiveListId();
-      currentListId = lists.find((l) => l.id === activeId)?.id || lists[0].id;
-    }
-    if (!usingOnboarding && currentListId) {
-      GeoStore.saveActiveListId(currentListId);
-    }
+  const applyResolvedList = async () => {
+    const resolved = await resolveList(route);
+    lists = resolved.lists;
+    currentListId = resolved.currentListId;
+    readOnly = resolved.readOnly;
+    isRemoteShare = resolved.isRemoteShare;
+    remoteShareId = resolved.remoteShareId;
+    remoteEditable = resolved.remoteEditable;
   };
 
   const setActiveList = (listId) => {
@@ -375,7 +458,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  ensureLists();
+  await applyResolvedList();
   const activeList = getActiveList();
   places = activeList?.places ? [...activeList.places] : [];
   savedTitle = activeList?.title || "My map";
@@ -520,6 +603,13 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!confirm("Remove all saved places?")) return;
       places = [];
       updateActiveList((list) => ({ ...list, places }));
+      renderPlaces();
+    });
+  }
+
+  if (listSearchInput) {
+    listSearchInput.addEventListener("input", (e) => {
+      listSearchQuery = e.target.value || "";
       renderPlaces();
     });
   }

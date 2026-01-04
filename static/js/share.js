@@ -11,6 +11,7 @@ const GeoShare = (() => {
   let dataProvider = null;
   let remoteShare = null;
   let remoteSharePromise = null;
+  const MAX_QR_DATA_LENGTH = 1200;
 
   // Lightweight LZ-based compressor (subset of lz-string, MIT) to shrink shared URLs.
   const LZString = (() => {
@@ -506,11 +507,35 @@ const GeoShare = (() => {
     return null;
   };
 
-  const buildShareUrl = (payload) => {
-    const encoded = encodePayload(payload);
+  const buildBaseUrl = () => {
     const url = new URL(window.location.href);
+    url.searchParams.delete("share");
+    url.searchParams.delete("share_id");
+    url.searchParams.delete("editable");
+    return url;
+  };
+
+  const buildShareIdUrl = (shareId, editable = false) => {
+    const url = buildBaseUrl();
+    url.searchParams.set("share_id", shareId);
+    if (editable) url.searchParams.set("editable", "1");
+    return url.toString();
+  };
+
+  const buildShareUrl = (payload) => {
+    // backward compatible
+    const encoded = encodePayload(payload);
+    const url = buildBaseUrl();
     url.searchParams.set("share", encoded);
     return url.toString();
+  };
+
+  const getCurrentShareContext = () => {
+    const url = new URL(window.location.href);
+    return {
+      shareId: url.searchParams.get("share_id"),
+      shareParam: url.searchParams.get("share"),
+    };
   };
 
   const getData = () => {
@@ -576,8 +601,24 @@ ${wpts}
       alert("Нет мест для ссылки.");
       return;
     }
-    const payload = compactPayload({ places, title, editable: false });
-    const link = buildShareUrl(payload);
+    const current = getCurrentShareContext();
+    let link = "";
+    if (current.shareId) {
+      link = buildShareIdUrl(current.shareId, false);
+    } else {
+      const payload = compactPayload({ places, title, editable: false });
+      const localLink = buildShareUrl(payload);
+      if (localLink.length > MAX_QR_DATA_LENGTH) {
+        const share = await ensureRemoteShare();
+        if (!share?.viewUrl) {
+          alert("Не удалось создать ссылку.");
+          return;
+        }
+        link = share.viewUrl;
+      } else {
+        link = localLink;
+      }
+    }
     let copied = false;
     try {
       if (navigator.clipboard?.writeText) {
@@ -635,9 +676,13 @@ ${wpts}
   };
 
   const shareMagicLink = async () => {
-    const remote = await ensureRemoteShare();
-    if (!remote?.editUrl) return;
-    const link = remote.editUrl;
+    const current = getCurrentShareContext();
+    let link = current.shareId ? buildShareIdUrl(current.shareId, true) : "";
+    if (!link) {
+      const remote = await ensureRemoteShare();
+      if (!remote?.editUrl) return;
+      link = remote.editUrl;
+    }
     let copied = false;
     try {
       if (navigator.clipboard?.writeText) {
@@ -665,18 +710,41 @@ ${wpts}
     }
     let link = "";
     if (editable) {
-      if (!remoteShare?.editUrl) {
-        if (shareQrLabel) shareQrLabel.textContent = "Generating edit link...";
-        const share = await ensureRemoteShare();
-        if (!share?.editUrl) {
-          if (shareQrLabel) shareQrLabel.textContent = "Не удалось создать ссылку.";
-          return;
+      const current = getCurrentShareContext();
+      if (current.shareId) {
+        link = buildShareIdUrl(current.shareId, true);
+      } else {
+        if (!remoteShare?.editUrl) {
+          if (shareQrLabel) shareQrLabel.textContent = "Generating edit link...";
+          const share = await ensureRemoteShare();
+          if (!share?.editUrl) {
+            if (shareQrLabel) shareQrLabel.textContent = "Не удалось создать ссылку.";
+            return;
+          }
+        }
+        link = remoteShare.editUrl;
+      }
+    } else {
+      const current = getCurrentShareContext();
+      if (current.shareId) {
+        link = buildShareIdUrl(current.shareId, false);
+      } else {
+        const payload = compactPayload({ places, title, editable: false });
+        const localLink = buildShareUrl(payload);
+        if (localLink.length > MAX_QR_DATA_LENGTH) {
+          if (!remoteShare?.viewUrl) {
+            if (shareQrLabel) shareQrLabel.textContent = "Generating short link...";
+            const share = await ensureRemoteShare();
+            if (!share?.viewUrl) {
+              if (shareQrLabel) shareQrLabel.textContent = "Не удалось создать ссылку.";
+              return;
+            }
+          }
+          link = remoteShare.viewUrl;
+        } else {
+          link = localLink;
         }
       }
-      link = remoteShare.editUrl;
-    } else {
-      const payload = compactPayload({ places, title, editable: false });
-      link = buildShareUrl(payload);
     }
     if (GeoQr?.render) GeoQr.render(shareQrCode, link, 512);
     if (shareQrLabel) {

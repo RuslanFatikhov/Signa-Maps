@@ -25,6 +25,7 @@ const GeoForm = (() => {
   const searchSheetList = document.getElementById("searchSheetList");
   const mapStyleUrl = window.MAPBOX_STYLE_URL || "mapbox://styles/mapbox/streets-v12";
   const plusIconUrl = window.PLUS_ICON_URL || "/static/img/icons/plus.svg";
+  const isOffline = () => typeof navigator !== "undefined" && navigator.onLine === false;
 
   const ensureMapboxToken = () => {
     if (typeof mapboxgl === "undefined") return;
@@ -335,7 +336,7 @@ const GeoForm = (() => {
         `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&extratags=1&namedetails=1&q=${encodeURIComponent(query)}&limit=20`,
         {
           headers: {
-            "Accept-Language": "ru",
+            "Accept-Language": "en",
           },
         }
       );
@@ -344,6 +345,12 @@ const GeoForm = (() => {
       renderSearchResults(data || []);
     } catch (err) {
       console.warn("Search error", err);
+      if (searchSheetList) {
+        const message = isOffline()
+          ? "Поиск недоступен офлайн. Попробуйте снова, когда будет интернет."
+          : "Поиск временно недоступен. Повторите попытку позже.";
+        searchSheetList.innerHTML = `<div class="empty_state_search"><h3>Search unavailable</h3><p>${message}</p></div>`;
+      }
     }
   };
 
@@ -360,7 +367,7 @@ const GeoForm = (() => {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&extratags=1&namedetails=1&lat=${lat}&lon=${lng}`,
         {
-          headers: { "Accept-Language": "ru" },
+          headers: { "Accept-Language": "en" },
         }
       );
       if (!response.ok) return null;
@@ -387,7 +394,7 @@ const GeoForm = (() => {
         titleInput.value = lastSuggestedTitle;
       }
     } else {
-      setLocationLabel("Точка выбрана на карте");
+      setLocationLabel(isOffline() ? "Адрес недоступен офлайн" : "Точка выбрана на карте");
     }
   };
 

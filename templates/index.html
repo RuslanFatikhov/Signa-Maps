@@ -35,7 +35,10 @@
           
 
           <section class="list-panel">
-
+          <div class="list-search" id="listSearch" style="display:none;">
+            <img src="{{ url_for('static', filename='img/icons/search.svg') }}" alt="" aria-hidden="true">
+            <input id="listSearchInput" type="search" placeholder="Search in list">
+          </div>
           <div id="places" class="card-stack"></div>
         </section>
       </main>
@@ -222,6 +225,7 @@
         <button class="cell" type="button prime-100" data-map-service="yandex">Yandex Maps</button>
         <button class="cell" type="button prime-100" data-map-service="apple">Apple Maps</button>
         <button class="cell" type="button prime-100" data-map-service="google">Google Maps</button>
+        <button class="cell" type="button prime-100" data-map-service="organic">Organic Maps</button>
       </div>
     </div>
 </section>

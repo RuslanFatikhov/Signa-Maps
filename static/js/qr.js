@@ -11,6 +11,9 @@ const GeoQr = (() => {
     const img = new Image();
     img.className = "qr-image";
     img.alt = "QR code";
+    img.onerror = () => {
+      container.innerHTML = '<div class="empty_state_search"><p>QR недоступен офлайн.</p></div>';
+    };
     img.src = buildUrl(text, size);
     container.appendChild(img);
   };
