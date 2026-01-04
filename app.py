@@ -108,6 +108,21 @@ def create_app() -> Flask:
             changelog_text = "Changelog is unavailable right now."
         return render_template("about.html", changelog_text=changelog_text)
 
+    @app.route("/admin/analytics")
+    def admin_analytics():
+        if not is_admin_request():
+            abort(404)
+        data = read_analytics()
+        server_time = datetime.now(timezone.utc).isoformat()
+        return render_template("admin_analytics.html", data=data, server_time=server_time)
+
+    @app.route("/admin/analytics/data")
+    def admin_analytics_data():
+        if not is_admin_request():
+            abort(404)
+        data = read_analytics()
+        return jsonify(data)
+
     @app.post("/api/share")
     def create_share():
         payload = request.get_json(silent=True) or {}
