@@ -33,6 +33,7 @@
     font-weight: 600;
     color: var(--black100);
     margin-bottom: var(--space-1);
+    overflow-x: hidden;
 }
 
 .search-result__meta{

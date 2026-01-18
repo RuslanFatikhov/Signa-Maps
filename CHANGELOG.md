@@ -1,5 +1,13 @@
 # Changelog
 
+
+## 1.2
+
+### Update
+— Lists can now be exported not only in GPX format, but also in KMZ and CSV formats.
+— The Share View design has been updated — it is now cleaner and more relaxed.
+— Lists can now be password protected.
+
 ## 1.1
 
 ### Fixes
