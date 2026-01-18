@@ -1,0 +1,24 @@
+<!--Search sheet-->
+<div class="sheet-backdrop" id="searchSheetBackdrop" aria-hidden="true"></div>
+<section class="sheet sheet--info" id="searchSheet" aria-hidden="true">
+    <div class="sheet__handle"></div>
+    <div class="sheet__content">
+      <header class="sheet__header">
+        <div>
+          <h2 class="prime-100">Search results</h2>
+        </div>
+        <button class="btn_icon_ghost" type="button" id="searchSheetClose" aria-label="Закрыть шторку">
+          <img src="{{ url_for('static', filename='img/icons/cross.svg') }}" alt="Close">
+        </button>
+      </header>
+      <div class="field pdlr4">
+        <div class="field__search_clear">
+          <img src="{{ url_for('static', filename='img/icons/search.svg') }}" alt="" aria-hidden="true">
+          <input class="w100" id="searchSheetInput" type="search" placeholder="Search">
+        </div>
+      </div>
+      <div class="field pdlr4">
+        <div id="searchSheetList" class="search-results"></div>
+      </div>
+    </div>
+</section>

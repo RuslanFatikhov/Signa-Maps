@@ -3,15 +3,53 @@ const GeoShare = (() => {
   const sheet = document.getElementById("shareSheet");
   const backdrop = document.getElementById("shareSheetBackdrop");
   const closeBtn = document.getElementById("shareSheetClose");
-  const options = document.querySelectorAll("[data-share]");
-  const shareListBtn = document.getElementById("shareListBtn");
-  const editableToggle = document.getElementById("shareEditableToggle");
-  const shareQrCode = document.getElementById("shareSheetQrCode");
-  const shareQrLabel = document.getElementById("shareSheetQrLabel");
+  const exportButtons = document.querySelectorAll("[data-export]");
+  const accessButtons = document.querySelectorAll("[data-share-access]");
+  const shareCopyBtn = document.getElementById("shareCopyBtn");
+  const shareQrBtn = document.getElementById("shareQrBtn");
+  const sharePasswordRow = document.getElementById("sharePasswordRow");
+  const sharePasswordStatus = document.getElementById("sharePasswordStatus");
+  const shareTitle = document.getElementById("shareSheetTitle");
+  const passwordSheet = document.getElementById("sharePasswordSheet");
+  const passwordBackdrop = document.getElementById("sharePasswordBackdrop");
+  const passwordCloseBtn = document.getElementById("sharePasswordClose");
+  const passwordInput = document.getElementById("sharePasswordInput");
+  const passwordEditBtn = document.getElementById("sharePasswordEdit");
+  const passwordDeleteBtn = document.getElementById("sharePasswordDelete");
+  const passwordDoneBtn = document.getElementById("sharePasswordDone");
+  const qrSheet = document.getElementById("shareQrSheet");
+  const qrBackdrop = document.getElementById("shareQrBackdrop");
+  const qrCloseBtn = document.getElementById("shareQrClose");
+  const qrDoneBtn = document.getElementById("shareQrDone");
+  const qrDownloadBtn = document.getElementById("shareQrDownload");
+  const qrCode = document.getElementById("shareQrSheetCode");
+  const qrStatus = document.getElementById("shareQrSheetStatus");
   let dataProvider = null;
   let remoteShare = null;
   let remoteSharePromise = null;
   const MAX_QR_DATA_LENGTH = 1200;
+  let activeAccess = "view";
+  let passwordSet = false;
+  let passwordEditing = false;
+  let lastQrLink = "";
+  const SHARE_ID_STORAGE_KEY = "geoShareId";
+
+  const getStoredShareId = () => {
+    try {
+      return localStorage.getItem(SHARE_ID_STORAGE_KEY);
+    } catch (err) {
+      return null;
+    }
+  };
+
+  const storeShareId = (shareId) => {
+    if (!shareId) return;
+    try {
+      localStorage.setItem(SHARE_ID_STORAGE_KEY, shareId);
+    } catch (err) {
+      // Storage can be unavailable in private mode or blocked by browser settings.
+    }
+  };
 
   // Lightweight LZ-based compressor (subset of lz-string, MIT) to shrink shared URLs.
   const LZString = (() => {
@@ -450,13 +488,15 @@ const GeoShare = (() => {
     };
   };
 
-  const escapeXml = (value = "") =>
-    value
+  const escapeXml = (value = "") => {
+    const safe = String(value).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "");
+    return safe
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&apos;");
+  };
 
   const encodePayload = (payload) => {
     const json = JSON.stringify(payload);
@@ -546,6 +586,97 @@ const GeoShare = (() => {
     };
   };
 
+  const setShareTitle = () => {
+    if (!shareTitle) return;
+    const { title } = getData();
+    shareTitle.textContent = title || "My map";
+  };
+
+  const openSheet = (target, targetBackdrop) => {
+    if (target) {
+      target.classList.add("is-open");
+      target.setAttribute("aria-hidden", "false");
+    }
+    if (targetBackdrop) {
+      targetBackdrop.classList.add("is-open");
+      targetBackdrop.setAttribute("aria-hidden", "false");
+    }
+  };
+
+  const closeSheet = (target, targetBackdrop) => {
+    if (target) {
+      target.classList.remove("is-open");
+      target.setAttribute("aria-hidden", "true");
+    }
+    if (targetBackdrop) {
+      targetBackdrop.classList.remove("is-open");
+      targetBackdrop.setAttribute("aria-hidden", "true");
+    }
+  };
+
+  const setActiveAccess = (mode) => {
+    activeAccess = mode === "edit" ? "edit" : "view";
+    accessButtons.forEach((btn) => {
+      const isActive = btn.dataset.shareAccess === activeAccess;
+      btn.classList.toggle("is-active", isActive);
+      btn.setAttribute("aria-pressed", isActive ? "true" : "false");
+    });
+  };
+
+  const getActiveShareId = () => {
+    const current = getCurrentShareContext();
+    if (current.shareId) {
+      storeShareId(current.shareId);
+      return current.shareId;
+    }
+    if (remoteShare?.id) {
+      storeShareId(remoteShare.id);
+      return remoteShare.id;
+    }
+    if (remoteShare?.viewUrl) {
+      try {
+        const url = new URL(remoteShare.viewUrl);
+        const shareId = url.searchParams.get("share_id");
+        if (shareId) storeShareId(shareId);
+        return shareId;
+      } catch (err) {
+        return null;
+      }
+    }
+    return getStoredShareId();
+  };
+
+  const ensureShareId = async () => {
+    const currentId = getActiveShareId();
+    if (currentId) return currentId;
+    const share = await ensureRemoteShare();
+    return share?.id || null;
+  };
+
+  const loadPasswordState = async () => {
+    const shareId = getActiveShareId();
+    if (!shareId) {
+      passwordSet = false;
+      return false;
+    }
+    try {
+      const response = await fetch(`/api/share/${shareId}/password`);
+      if (!response.ok) throw new Error("Password state failed");
+      const data = await response.json();
+      passwordSet = Boolean(data?.hasPassword);
+      return passwordSet;
+    } catch (err) {
+      console.warn("Password state failed", err);
+      passwordSet = false;
+      return false;
+    }
+  };
+
+  const updatePasswordStatus = () => {
+    if (!sharePasswordStatus) return;
+    sharePasswordStatus.textContent = passwordSet ? "Set" : "";
+  };
+
   const buildGpx = (places = [], title = "My map") => {
     const metaTime = new Date().toISOString();
     const wpts = places
@@ -571,8 +702,176 @@ ${wpts}
 </gpx>`;
   };
 
+  const buildCsv = (places = []) => {
+    const rows = [
+      ["Title", "Note", "Address", "Latitude", "Longitude"],
+      ...places.map((p) => [
+        p.title || "",
+        p.note || "",
+        p.address || "",
+        p.lat ?? "",
+        p.lng ?? "",
+      ]),
+    ];
+    return rows
+      .map((row) =>
+        row
+          .map((value) => {
+            const text = String(value ?? "");
+            if (/[",\n]/.test(text)) {
+              return `"${text.replace(/"/g, '""')}"`;
+            }
+            return text;
+          })
+          .join(",")
+      )
+      .join("\n");
+  };
+
+  const buildKml = (places = [], title = "My map") => {
+    const items = places
+      .map((p) => {
+        const name = escapeXml(p.title || "Untitled");
+        const address = p.address || `${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`;
+        const note = p.note ? `${p.note}\n${address}` : address;
+        const desc = escapeXml(note);
+        return `    <Placemark>
+      <name>${name}</name>
+      <description>${desc}</description>
+      <Point>
+        <coordinates>${p.lng},${p.lat},0</coordinates>
+      </Point>
+    </Placemark>`;
+      })
+      .join("\n");
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>${escapeXml(title)}</name>
+${items}
+  </Document>
+</kml>`;
+  };
+
+  const toCrc32 = (bytes) => {
+    let crc = 0xffffffff;
+    for (let i = 0; i < bytes.length; i += 1) {
+      crc ^= bytes[i];
+      for (let j = 0; j < 8; j += 1) {
+        const mask = -(crc & 1);
+        crc = (crc >>> 1) ^ (0xedb88320 & mask);
+      }
+    }
+    return (crc ^ 0xffffffff) >>> 0;
+  };
+
+  const getDosTimeDate = (date = new Date()) => {
+    const year = Math.max(1980, date.getFullYear()) - 1980;
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const seconds = Math.floor(date.getSeconds() / 2);
+    const dosTime = (hours << 11) | (minutes << 5) | seconds;
+    const dosDate = (year << 9) | (month << 5) | day;
+    return { dosTime, dosDate };
+  };
+
+  const buildKmz = (kmlContent, filename = "doc.kml") => {
+    const encoder = new TextEncoder();
+    const fileData = encoder.encode(kmlContent);
+    const nameBytes = encoder.encode(filename);
+    const { dosTime, dosDate } = getDosTimeDate();
+    const flags = 0x0800;
+    const crc32 = toCrc32(fileData);
+    const localHeader = new Uint8Array(30 + nameBytes.length);
+    const view = new DataView(localHeader.buffer);
+    let offset = 0;
+    view.setUint32(offset, 0x04034b50, true);
+    offset += 4;
+    view.setUint16(offset, 20, true);
+    offset += 2;
+    view.setUint16(offset, flags, true);
+    offset += 2;
+    view.setUint16(offset, 0, true);
+    offset += 2;
+    view.setUint16(offset, dosTime, true);
+    offset += 2;
+    view.setUint16(offset, dosDate, true);
+    offset += 2;
+    view.setUint32(offset, crc32, true);
+    offset += 4;
+    view.setUint32(offset, fileData.length, true);
+    offset += 4;
+    view.setUint32(offset, fileData.length, true);
+    offset += 4;
+    view.setUint16(offset, nameBytes.length, true);
+    offset += 2;
+    view.setUint16(offset, 0, true);
+    offset += 2;
+    localHeader.set(nameBytes, offset);
+
+    const centralHeader = new Uint8Array(46 + nameBytes.length);
+    const centralView = new DataView(centralHeader.buffer);
+    offset = 0;
+    centralView.setUint32(offset, 0x02014b50, true);
+    offset += 4;
+    centralView.setUint16(offset, 20, true);
+    offset += 2;
+    centralView.setUint16(offset, 20, true);
+    offset += 2;
+    centralView.setUint16(offset, flags, true);
+    offset += 2;
+    centralView.setUint16(offset, 0, true);
+    offset += 2;
+    centralView.setUint16(offset, dosTime, true);
+    offset += 2;
+    centralView.setUint16(offset, dosDate, true);
+    offset += 2;
+    centralView.setUint32(offset, crc32, true);
+    offset += 4;
+    centralView.setUint32(offset, fileData.length, true);
+    offset += 4;
+    centralView.setUint32(offset, fileData.length, true);
+    offset += 4;
+    centralView.setUint16(offset, nameBytes.length, true);
+    offset += 2;
+    centralView.setUint16(offset, 0, true);
+    offset += 2;
+    centralView.setUint16(offset, 0, true);
+    offset += 2;
+    centralView.setUint16(offset, 0, true);
+    offset += 2;
+    centralView.setUint16(offset, 0, true);
+    offset += 2;
+    centralView.setUint32(offset, 0, true);
+    offset += 4;
+    centralView.setUint32(offset, 0, true);
+    offset += 4;
+    centralHeader.set(nameBytes, offset);
+
+    const endHeader = new Uint8Array(22);
+    const endView = new DataView(endHeader.buffer);
+    endView.setUint32(0, 0x06054b50, true);
+    endView.setUint16(4, 0, true);
+    endView.setUint16(6, 0, true);
+    endView.setUint16(8, 1, true);
+    endView.setUint16(10, 1, true);
+    endView.setUint32(12, centralHeader.length, true);
+    endView.setUint32(16, localHeader.length + fileData.length, true);
+    endView.setUint16(20, 0, true);
+
+    const blobParts = [localHeader, fileData, centralHeader, endHeader];
+    return new Blob(blobParts, { type: "application/vnd.google-earth.kmz" });
+  };
+
   const downloadTextFile = (content, filename, mime = "application/octet-stream") => {
     const blob = new Blob([content], { type: mime });
+    downloadBlob(blob, filename);
+  };
+
+  const downloadBlob = (blob, filename) => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -595,30 +894,56 @@ ${wpts}
     downloadTextFile(gpx, filename, "application/gpx+xml");
   };
 
-  const shareLink = async () => {
+  const shareAsCsv = () => {
     const { places, title } = getData();
     if (!places.length) {
-      alert("Нет мест для ссылки.");
+      alert("Add some places on the map");
       return;
     }
-    const current = getCurrentShareContext();
-    let link = "";
-    if (current.shareId) {
-      link = buildShareIdUrl(current.shareId, false);
-    } else {
-      const payload = compactPayload({ places, title, editable: false });
-      const localLink = buildShareUrl(payload);
-      if (localLink.length > MAX_QR_DATA_LENGTH) {
-        const share = await ensureRemoteShare();
-        if (!share?.viewUrl) {
-          alert("Не удалось создать ссылку.");
-          return;
-        }
-        link = share.viewUrl;
-      } else {
-        link = localLink;
-      }
+    const csv = buildCsv(places);
+    const cleanedTitle = (title || "My map").trim().replace(/[\\/:*?"<>|]+/g, "").trim() || "My map";
+    const filename = `${cleanedTitle}.csv`;
+    downloadTextFile(csv, filename, "text/csv;charset=utf-8");
+  };
+
+  const shareAsKmz = () => {
+    const { places, title } = getData();
+    if (!places.length) {
+      alert("Add some places on the map");
+      return;
     }
+    const kml = buildKml(places, title);
+    const kmz = buildKmz(kml, "doc.kml");
+    const cleanedTitle = (title || "My map").trim().replace(/[\\/:*?"<>|]+/g, "").trim() || "My map";
+    const filename = `${cleanedTitle}.kmz`;
+    downloadBlob(kmz, filename);
+  };
+
+  const getShareLink = async (editable = false) => {
+    const { places, title } = getData();
+    if (!places.length) {
+      alert("Add some places on the map");
+      return "";
+    }
+    const current = getCurrentShareContext();
+    if (current.shareId) {
+      return buildShareIdUrl(current.shareId, editable);
+    }
+    const remote = await ensureRemoteShare();
+    if (remote?.editUrl && remote?.viewUrl) {
+      return editable ? remote.editUrl : remote.viewUrl;
+    }
+    if (!editable) {
+      const payload = compactPayload({ places, title, editable: false });
+      return buildShareUrl(payload);
+    }
+    alert("Не удалось создать ссылку.");
+    return "";
+  };
+
+  const copyShareLink = async (editable = false) => {
+    const link = await getShareLink(editable);
+    if (!link) return;
     let copied = false;
     try {
       if (navigator.clipboard?.writeText) {
@@ -666,6 +991,7 @@ ${wpts}
       .then((share) => {
         if (share?.editUrl) {
           remoteShare = share;
+          storeShareId(share.id);
         }
         return share;
       })
@@ -675,135 +1001,211 @@ ${wpts}
     return remoteSharePromise;
   };
 
-  const shareMagicLink = async () => {
-    const current = getCurrentShareContext();
-    let link = current.shareId ? buildShareIdUrl(current.shareId, true) : "";
-    if (!link) {
-      const remote = await ensureRemoteShare();
-      if (!remote?.editUrl) return;
-      link = remote.editUrl;
-    }
-    let copied = false;
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(link);
-        copied = true;
-      }
-    } catch (err) {
-      console.warn("Clipboard write failed", err);
-    }
-    if (!copied) {
-      prompt("Скопируйте ссылку:", link);
-    }
-    GeoToast?.show?.({
-      title: "Magic link copied",
-    });
-  };
-
   const renderShareQr = async (editable = false) => {
-    if (!shareQrCode) return;
-    shareQrCode.innerHTML = "";
+    if (!qrCode) return;
+    qrCode.innerHTML = "";
+    if (qrStatus) qrStatus.textContent = "";
     const { places, title } = getData();
     if (!places.length) {
-      if (shareQrLabel) shareQrLabel.textContent = "Add places to generate a link";
+      if (qrStatus) qrStatus.textContent = "Add places to generate a link";
       return;
     }
     let link = "";
-    if (editable) {
-      const current = getCurrentShareContext();
-      if (current.shareId) {
-        link = buildShareIdUrl(current.shareId, true);
-      } else {
-        if (!remoteShare?.editUrl) {
-          if (shareQrLabel) shareQrLabel.textContent = "Generating edit link...";
+    const current = getCurrentShareContext();
+    if (current.shareId) {
+      link = buildShareIdUrl(current.shareId, editable);
+    } else if (editable) {
+      if (!remoteShare?.editUrl) {
+        if (qrStatus) qrStatus.textContent = "Generating edit link...";
+        const share = await ensureRemoteShare();
+        if (!share?.editUrl) {
+          if (qrStatus) qrStatus.textContent = "Unable to create link";
+          return;
+        }
+      }
+      link = remoteShare.editUrl;
+    } else {
+      const payload = compactPayload({ places, title, editable: false });
+      const localLink = buildShareUrl(payload);
+      if (localLink.length > MAX_QR_DATA_LENGTH) {
+        if (qrStatus) qrStatus.textContent = "Generating short link...";
+        if (!remoteShare?.viewUrl) {
           const share = await ensureRemoteShare();
-          if (!share?.editUrl) {
-            if (shareQrLabel) shareQrLabel.textContent = "Не удалось создать ссылку.";
+          if (!share?.viewUrl) {
+            if (qrStatus) qrStatus.textContent = "Unable to create link";
             return;
           }
         }
-        link = remoteShare.editUrl;
-      }
-    } else {
-      const current = getCurrentShareContext();
-      if (current.shareId) {
-        link = buildShareIdUrl(current.shareId, false);
+        link = remoteShare.viewUrl;
       } else {
-        const payload = compactPayload({ places, title, editable: false });
-        const localLink = buildShareUrl(payload);
-        if (localLink.length > MAX_QR_DATA_LENGTH) {
-          if (!remoteShare?.viewUrl) {
-            if (shareQrLabel) shareQrLabel.textContent = "Generating short link...";
-            const share = await ensureRemoteShare();
-            if (!share?.viewUrl) {
-              if (shareQrLabel) shareQrLabel.textContent = "Не удалось создать ссылку.";
-              return;
-            }
-          }
-          link = remoteShare.viewUrl;
-        } else {
-          link = localLink;
-        }
+        link = localLink;
       }
     }
-    if (GeoQr?.render) GeoQr.render(shareQrCode, link, 512);
-    if (shareQrLabel) {
-      shareQrLabel.textContent = editable ? "QR for edit link" : "QR for view-only link";
+    lastQrLink = link;
+    if (link.length > MAX_QR_DATA_LENGTH) {
+      if (qrStatus) qrStatus.textContent = "Link too long for QR";
+      return;
+    }
+    if (GeoQr?.render) GeoQr.render(qrCode, link, 512);
+  };
+
+  const openPasswordSheet = async () => {
+    const shareId = await ensureShareId();
+    if (!shareId) return;
+    await loadPasswordState();
+    updatePasswordStatus();
+    passwordEditing = false;
+    if (passwordInput) {
+      passwordInput.value = "";
+      passwordInput.disabled = passwordSet;
+      passwordInput.placeholder = passwordSet ? "Password set" : "Password";
+    }
+    if (passwordEditBtn) passwordEditBtn.style.display = passwordSet ? "inline-flex" : "none";
+    if (passwordDeleteBtn) passwordDeleteBtn.style.display = passwordSet ? "inline-flex" : "none";
+    openSheet(passwordSheet, passwordBackdrop);
+  };
+
+  const closePasswordSheet = () => {
+    closeSheet(passwordSheet, passwordBackdrop);
+  };
+
+  const setSharePassword = async (password) => {
+    const shareId = await ensureShareId();
+    if (!shareId) return false;
+    try {
+      const response = await fetch(`/api/share/${shareId}/password`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+      if (!response.ok) throw new Error("Password set failed");
+      passwordSet = true;
+      updatePasswordStatus();
+      return true;
+    } catch (err) {
+      console.warn("Password set failed", err);
+      alert("Не удалось сохранить пароль.");
+      return false;
     }
   };
 
-  const open = () => {
-    if (sheet) {
-      sheet.classList.add("is-open");
-      sheet.setAttribute("aria-hidden", "false");
+  const deleteSharePassword = async () => {
+    const shareId = await ensureShareId();
+    if (!shareId) return false;
+    try {
+      const response = await fetch(`/api/share/${shareId}/password`, { method: "DELETE" });
+      if (!response.ok) throw new Error("Password delete failed");
+      passwordSet = false;
+      updatePasswordStatus();
+      return true;
+    } catch (err) {
+      console.warn("Password delete failed", err);
+      alert("Не удалось удалить пароль.");
+      return false;
     }
-    if (backdrop) {
-      backdrop.classList.add("is-open");
-      backdrop.setAttribute("aria-hidden", "false");
+  };
+
+  const handlePasswordDone = async () => {
+    if (passwordSet && !passwordEditing) {
+      closePasswordSheet();
+      return;
     }
-    if (editableToggle) {
-      editableToggle.checked = false;
+    const nextPassword = (passwordInput?.value || "").trim();
+    if (!nextPassword) {
+      alert("Введите пароль.");
+      return;
     }
-    renderShareQr(false);
+    const ok = await setSharePassword(nextPassword);
+    if (ok) {
+      passwordEditing = false;
+      closePasswordSheet();
+    }
+  };
+
+  const openQrSheet = async () => {
+    openSheet(qrSheet, qrBackdrop);
+    if (qrStatus) qrStatus.textContent = "Generating QR...";
+    await renderShareQr(activeAccess === "edit");
+  };
+
+  const closeQrSheet = () => {
+    closeSheet(qrSheet, qrBackdrop);
+  };
+
+  const downloadQr = async () => {
+    const link = lastQrLink || (await getShareLink(activeAccess === "edit"));
+    if (!link || !GeoQr?.getUrl) return;
+    try {
+      const response = await fetch(GeoQr.getUrl(link, 512));
+      if (!response.ok) throw new Error("QR download failed");
+      const blob = await response.blob();
+      downloadBlob(blob, "share-qr.png");
+    } catch (err) {
+      console.warn("QR download failed", err);
+      window.open(GeoQr.getUrl(link, 512), "_blank");
+    }
+  };
+
+  const open = async () => {
+    openSheet(sheet, backdrop);
+    setShareTitle();
+    setActiveAccess("view");
+    await loadPasswordState();
+    updatePasswordStatus();
   };
 
   const close = () => {
-    if (sheet) {
-      sheet.classList.remove("is-open");
-      sheet.setAttribute("aria-hidden", "true");
-    }
-    if (backdrop) {
-      backdrop.classList.remove("is-open");
-      backdrop.setAttribute("aria-hidden", "true");
-    }
+    closeSheet(sheet, backdrop);
   };
 
   shareBtn?.addEventListener("click", open);
   closeBtn?.addEventListener("click", close);
   backdrop?.addEventListener("click", close);
-  shareListBtn?.addEventListener("click", () => {
-    if (editableToggle?.checked) {
-      shareMagicLink();
-    } else {
-      shareLink();
-    }
-    close();
+  passwordCloseBtn?.addEventListener("click", closePasswordSheet);
+  passwordBackdrop?.addEventListener("click", closePasswordSheet);
+  qrCloseBtn?.addEventListener("click", closeQrSheet);
+  qrBackdrop?.addEventListener("click", closeQrSheet);
+  qrDoneBtn?.addEventListener("click", closeQrSheet);
+  qrDownloadBtn?.addEventListener("click", downloadQr);
+
+  shareCopyBtn?.addEventListener("click", () => {
+    copyShareLink(activeAccess === "edit");
   });
-  editableToggle?.addEventListener("change", () => {
-    renderShareQr(Boolean(editableToggle?.checked));
+  shareQrBtn?.addEventListener("click", openQrSheet);
+  sharePasswordRow?.addEventListener("click", openPasswordSheet);
+  passwordDoneBtn?.addEventListener("click", handlePasswordDone);
+
+  passwordEditBtn?.addEventListener("click", () => {
+    passwordEditing = true;
+    if (passwordInput) {
+      passwordInput.disabled = false;
+      passwordInput.value = "";
+      passwordInput.placeholder = "New password";
+      passwordInput.focus();
+    }
   });
 
-  options.forEach((btn) => {
+  passwordDeleteBtn?.addEventListener("click", async () => {
+    const ok = await deleteSharePassword();
+    if (ok) closePasswordSheet();
+  });
+
+  accessButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
-      const type = btn.dataset.share;
+      setActiveAccess(btn.dataset.shareAccess || "view");
+    });
+  });
+
+  exportButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const type = btn.dataset.export;
       if (type === "gpx") {
         shareAsGpx();
-      } else if (type === "link") {
-        shareLink();
-      } else if (type === "magic") {
-        shareMagicLink();
+      } else if (type === "csv") {
+        shareAsCsv();
+      } else if (type === "kmz") {
+        shareAsKmz();
       }
-      close();
     });
   });
 

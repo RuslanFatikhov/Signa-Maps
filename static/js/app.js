@@ -5,6 +5,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let remoteEditable = false;
     let isRemoteShare = false;
     let readOnly = false;
+    let remoteSharePassword = "";
+    let pendingShare = null;
 
   const undoBanner = document.getElementById("undoBanner");
   const undoText = document.getElementById("undoText");
@@ -19,6 +21,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const listToggleBtn = document.getElementById("listToggleBtn");
   const listSearch = document.getElementById("listSearch");
   const listSearchInput = document.getElementById("listSearchInput");
+  const shareGate = document.getElementById("sharePasswordGate");
+  const shareGatePanel = shareGate?.querySelector(".share-gate__panel");
+  const shareGateInput = document.getElementById("shareGateInput");
+  const shareGateOpen = document.getElementById("shareGateOpen");
 
   let lists = [];
   let currentListId = null;
@@ -35,10 +41,14 @@ document.addEventListener("DOMContentLoaded", () => {
   let listsWithPlaces = new Set();
   let listSearchQuery = "";
 
-  const loadRemoteShare = async (shareId) => {
+  const loadRemoteShare = async (shareId, password = "") => {
     if (!shareId) return null;
     try {
-      const response = await fetch(`/api/share/${shareId}`);
+      const headers = password ? { "X-Share-Password": password } : {};
+      const response = await fetch(`/api/share/${shareId}`, { headers });
+      if (response.status === 401) {
+        return { requiresPassword: true };
+      }
       if (!response.ok) throw new Error("Remote share load failed");
       return await response.json();
     } catch (err) {
@@ -50,9 +60,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const saveRemoteShare = async (list) => {
     if (!remoteShareId || !remoteEditable) return;
     try {
+      const headers = { "Content-Type": "application/json" };
+      if (remoteSharePassword) headers["X-Share-Password"] = remoteSharePassword;
       await fetch(`/api/share/${remoteShareId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ title: list.title || "My map", places: list.places || [] }),
       });
     } catch (err) {
@@ -98,7 +110,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const isLocalMode = hashRoute.mode === "local";
 
     if (routeShareId) {
-      const remoteData = await loadRemoteShare(routeShareId);
+      const remoteData = await loadRemoteShare(routeShareId, remoteSharePassword);
+      if (remoteData?.requiresPassword) {
+        return {
+          lists: [],
+          currentListId: null,
+          readOnly: true,
+          isRemoteShare: true,
+          remoteShareId: routeShareId,
+          remoteEditable: routeEditable,
+          sharedParam: null,
+          sharedPayload: null,
+          requiresPassword: true,
+        };
+      }
       if (remoteData) {
         const list = {
           id: routeShareId,
@@ -408,14 +433,97 @@ document.addEventListener("DOMContentLoaded", () => {
     renderListsPanel();
   };
 
-  const applyResolvedList = async () => {
-    const resolved = await resolveList(route);
+  const applyResolvedState = (resolved) => {
     lists = resolved.lists;
     currentListId = resolved.currentListId;
     readOnly = resolved.readOnly;
     isRemoteShare = resolved.isRemoteShare;
     remoteShareId = resolved.remoteShareId;
     remoteEditable = resolved.remoteEditable;
+  };
+
+  const openShareGate = () => {
+    if (shareGate) {
+      shareGate.classList.add("is-open");
+      shareGate.setAttribute("aria-hidden", "false");
+    }
+    if (shareGateInput) {
+      shareGateInput.value = "";
+      shareGateInput.focus();
+      if (shareGateOpen) {
+        shareGateOpen.disabled = !(shareGateInput.value || "").trim();
+      }
+    }
+    if (shareGatePanel) {
+      shareGatePanel.classList.remove("is-shaking");
+    }
+  };
+
+  const closeShareGate = () => {
+    if (shareGate) {
+      shareGate.classList.remove("is-open");
+      shareGate.setAttribute("aria-hidden", "true");
+    }
+    if (shareGatePanel) {
+      shareGatePanel.classList.remove("is-shaking");
+    }
+  };
+
+  const applyResolvedList = async () => {
+    const resolved = await resolveList(route);
+    if (resolved.requiresPassword) {
+      pendingShare = { id: resolved.remoteShareId, editable: resolved.remoteEditable };
+      applyResolvedState(resolved);
+      openShareGate();
+      return;
+    }
+    applyResolvedState(resolved);
+  };
+
+  const applyRemoteShareData = (shareId, remoteData, editable) => {
+    const list = {
+      id: shareId,
+      title: remoteData.title || "My map",
+      places: remoteData.places || [],
+      createdAt: remoteData.updatedAt || new Date().toISOString(),
+    };
+    GeoStore.saveLists([list]);
+    GeoStore.saveActiveListId(list.id);
+    applyResolvedState({
+      lists: [list],
+      currentListId: list.id,
+      readOnly: !editable,
+      isRemoteShare: true,
+      remoteShareId: shareId,
+      remoteEditable: editable,
+    });
+    listsWithPlaces = new Set([list.id].filter(() => (list.places || []).length > 0));
+    renderListsPanel();
+    syncFromActiveList();
+  };
+
+  const submitShareGate = async () => {
+    if (!pendingShare) return;
+    const password = (shareGateInput?.value || "").trim();
+    if (!password) return;
+    if (shareGateOpen) shareGateOpen.disabled = true;
+    const pending = pendingShare;
+    const remoteData = await loadRemoteShare(pending.id, password);
+    if (!remoteData || remoteData.requiresPassword) {
+      if (remoteData?.requiresPassword && shareGatePanel) {
+        shareGatePanel.classList.remove("is-shaking");
+        // Restart animation each time the password is rejected.
+        void shareGatePanel.offsetWidth;
+        shareGatePanel.classList.add("is-shaking");
+      }
+      if (shareGateInput) shareGateInput.value = "";
+      if (shareGateOpen) shareGateOpen.disabled = true;
+      return;
+    }
+    remoteSharePassword = password;
+    pendingShare = null;
+    closeShareGate();
+    applyRemoteShareData(pending.id, remoteData, pending.editable);
   };
 
   const setActiveList = (listId) => {
@@ -459,6 +567,13 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   await applyResolvedList();
+  if (!isRemoteShare && !readOnly && !lists.length) {
+    const fallbackList = createOnboardingList();
+    lists = [fallbackList];
+    currentListId = fallbackList.id;
+    GeoStore.saveLists(lists);
+    GeoStore.saveActiveListId(currentListId);
+  }
   const activeList = getActiveList();
   places = activeList?.places ? [...activeList.places] : [];
   savedTitle = activeList?.title || "My map";
@@ -466,6 +581,17 @@ document.addEventListener("DOMContentLoaded", () => {
     lists.filter((list) => (list.places || []).length > 0).map((list) => list.id)
   );
   setListEditToolbar(false);
+  if (shareGateInput && shareGateOpen) {
+    shareGateOpen.disabled = !(shareGateInput.value || "").trim();
+    shareGateInput.addEventListener("input", () => {
+      shareGateOpen.disabled = !(shareGateInput.value || "").trim();
+      if (shareGatePanel) shareGatePanel.classList.remove("is-shaking");
+    });
+    shareGateInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") submitShareGate();
+    });
+  }
+  shareGateOpen?.addEventListener("click", submitShareGate);
 
   const handlers = {
     onDelete: readOnly

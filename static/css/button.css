@@ -17,6 +17,33 @@ button{
     justify-content: center;
 }
 
+.btn_icon_secondary{
+    min-width: var(--space-8);
+    min-height: var(--space-8);
+    background: var(--gray100);
+    border-radius: var(--space-2);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn_icon_banner{
+    width: 60px;
+    height: 60px;
+    overflow: hidden;
+    border-radius: var(--space-4);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn_icon_banner img{
+    height: 100%;
+    object-fit: cover;
+}
+
 .btn_icon_label_primary_invert{
     width: var(--space-8) !important;
     height: var(--space-8) !important;

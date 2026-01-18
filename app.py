@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import secrets
@@ -45,10 +46,17 @@ def create_app() -> Flask:
                     id TEXT PRIMARY KEY,
                     data TEXT NOT NULL,
                     created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL
+                    updated_at TEXT NOT NULL,
+                    password_hash TEXT,
+                    password_salt TEXT
                 )
                 """
             )
+            columns = {row["name"] for row in conn.execute("PRAGMA table_info(shares)")}
+            if "password_hash" not in columns:
+                conn.execute("ALTER TABLE shares ADD COLUMN password_hash TEXT")
+            if "password_salt" not in columns:
+                conn.execute("ALTER TABLE shares ADD COLUMN password_salt TEXT")
 
     def ensure_analytics() -> None:
         # Privacy-safe analytics: single-row counters only, no identifiers, no event logs.
@@ -71,6 +79,23 @@ def create_app() -> Flask:
             return
         with get_db() as conn:
             conn.execute("UPDATE analytics SET count = count + ? WHERE metric = ?", (amount, metric))
+
+    def hash_share_password(password: str, salt: str) -> str:
+        return hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), 120000).hex()
+
+    def read_share_password() -> str:
+        return request.headers.get("X-Share-Password") or request.args.get("password") or ""
+
+    def verify_share_password(row: sqlite3.Row) -> bool:
+        stored_hash = row["password_hash"]
+        if not stored_hash:
+            return True
+        supplied = read_share_password()
+        if not supplied:
+            return False
+        salt = row["password_salt"] or ""
+        candidate = hash_share_password(supplied, salt)
+        return secrets.compare_digest(candidate, stored_hash)
 
     def read_analytics() -> dict:
         with get_db() as conn:
@@ -146,9 +171,14 @@ def create_app() -> Flask:
     @app.get("/api/share/<share_id>")
     def get_share(share_id: str):
         with get_db() as conn:
-            row = conn.execute("SELECT data, updated_at FROM shares WHERE id = ?", (share_id,)).fetchone()
+            row = conn.execute(
+                "SELECT data, updated_at, password_hash, password_salt FROM shares WHERE id = ?",
+                (share_id,),
+            ).fetchone()
         if not row:
             abort(404)
+        if not verify_share_password(row):
+            return jsonify({"error": "password_required"}), 401
         data = json.loads(row["data"])
         return jsonify(
             {
@@ -168,12 +198,54 @@ def create_app() -> Flask:
         data = json.dumps({"title": title, "places": places})
 
         with get_db() as conn:
-            cursor = conn.execute("SELECT 1 FROM shares WHERE id = ?", (share_id,))
-            if not cursor.fetchone():
+            row = conn.execute(
+                "SELECT password_hash, password_salt FROM shares WHERE id = ?", (share_id,)
+            ).fetchone()
+            if not row:
                 abort(404)
+            if not verify_share_password(row):
+                return jsonify({"error": "password_required"}), 401
             conn.execute("UPDATE shares SET data = ?, updated_at = ? WHERE id = ?", (data, now, share_id))
 
         return jsonify({"id": share_id, "updatedAt": now})
+
+    @app.get("/api/share/<share_id>/password")
+    def get_share_password_state(share_id: str):
+        with get_db() as conn:
+            row = conn.execute("SELECT password_hash FROM shares WHERE id = ?", (share_id,)).fetchone()
+        if not row:
+            abort(404)
+        return jsonify({"hasPassword": bool(row["password_hash"])})
+
+    @app.put("/api/share/<share_id>/password")
+    def set_share_password(share_id: str):
+        payload = request.get_json(silent=True) or {}
+        password = (payload.get("password") or "").strip()
+        if not password:
+            abort(400)
+        salt = secrets.token_hex(8)
+        password_hash = hash_share_password(password, salt)
+        with get_db() as conn:
+            cursor = conn.execute("SELECT 1 FROM shares WHERE id = ?", (share_id,))
+            if not cursor.fetchone():
+                abort(404)
+            conn.execute(
+                "UPDATE shares SET password_hash = ?, password_salt = ? WHERE id = ?",
+                (password_hash, salt, share_id),
+            )
+        return jsonify({"ok": True})
+
+    @app.delete("/api/share/<share_id>/password")
+    def delete_share_password(share_id: str):
+        with get_db() as conn:
+            cursor = conn.execute("SELECT 1 FROM shares WHERE id = ?", (share_id,))
+            if not cursor.fetchone():
+                abort(404)
+            conn.execute(
+                "UPDATE shares SET password_hash = NULL, password_salt = NULL WHERE id = ?",
+                (share_id,),
+            )
+        return jsonify({"ok": True})
 
     @app.post("/api/analytics/event")
     def analytics_event():

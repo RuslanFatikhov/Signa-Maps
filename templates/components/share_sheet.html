@@ -1,0 +1,81 @@
+<!--Share sheet-->
+<div class="sheet-backdrop" id="shareSheetBackdrop" aria-hidden="true"></div>
+<section class="sheet sheet--info" id="shareSheet" aria-hidden="true">
+    <div class="sheet__handle"></div>
+    <div class="sheet__content">
+
+      <!--header-->
+      <header class="sheet__header">
+        <h2 class="prime100" id="shareSheetTitle">Share map</h2>
+        <button class="btn_icon_ghost" type="button" id="shareSheetClose" aria-label="Закрыть шторку">
+          <img src="{{ url_for('static', filename='img/icons/cross.svg') }}" alt="Close">
+        </button>
+      </header>
+
+      <div>
+
+        <!--Export as a file-->
+        <section  aria-labelledby="shareExportTitle">
+          <h3 class="prime-100 pd_lr4 pd_bt4 pd_b4 pd_t4" id="shareExportTitle">Export as a file</h3>
+          <div class="hstack gap4 pd_lr4 ">
+
+            <button class="btn_icon_banner" type="button" data-export="gpx">
+              <img src="{{ url_for('static', filename='img/banner/gpx.jpg') }}" alt="" aria-hidden="true">
+            </button>
+
+            <button class="btn_icon_banner" type="button" data-export="csv">
+              <img src="{{ url_for('static', filename='img/banner/csv.jpg') }}" alt="" aria-hidden="true">
+            </button>
+
+            <button class="btn_icon_banner type="button" data-export="kmz">
+              <img src="{{ url_for('static', filename='img/banner/kmz.jpg') }}" alt="" aria-hidden="true">
+            </button>
+
+          </div>
+        </section>
+
+        <div class="sheet__submit sheet__submit--share">
+          <!--Share accsess-->
+          <section aria-labelledby="shareAccessTitle">
+            
+            <!--Selector-->
+            <div class="share-access" role="tablist" aria-label="Share access">
+              <button class="share-access__option hstack gap3 is-active" type="button" data-share-access="view" aria-pressed="true">
+                <div class="vstack fs">
+                  <h3 class="prime-100">View</h3>
+                  <p class="prime-100">Anyone with this link can view it online</p>
+                </div>
+              </button>
+              <button class="share-access__option hstack gap3" type="button" data-share-access="edit" aria-pressed="false">
+                <div class="vstack fs">
+                  <h3 class="prime-100">Edit</h3>
+                  <p class="prime-100">Anyone with this link can edit this list</p>
+                </div>
+              </button>
+            </div>
+
+            <!--Password-->
+            <button class="hstack sb aic cell pd_lr0" type="button" id="sharePasswordRow">
+              <span class="vstack fs">
+                <h3 class="prime100">Password</h3>
+                <p class="secondary-200 fw500" id="sharePasswordStatus" aria-live="polite"></p>
+              </span>
+              <img class="cell_chevron" src="{{ url_for('static', filename='img/icons/chevron-right.svg') }}">
+            </button>
+
+          </section>
+
+
+          <!--Action-->
+          <section>
+            <div class="share-actions-row">
+              <button class="btn_label_fill_primary" id="shareCopyBtn" type="button">Copy link</button>
+              <button class="btn_icon_secondary share-qr-btn" id="shareQrBtn" type="button" aria-label="Show QR code">
+                <img src="{{ url_for('static', filename='img/icons/qr.svg') }}" alt="" aria-hidden="true">
+              </button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+</section>

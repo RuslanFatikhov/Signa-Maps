@@ -18,5 +18,7 @@ const GeoQr = (() => {
     container.appendChild(img);
   };
 
-  return { render };
+  const getUrl = (text = "", size = 120) => buildUrl(text, size);
+
+  return { render, getUrl };
 })();

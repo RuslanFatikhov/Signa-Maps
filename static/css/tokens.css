@@ -2,7 +2,7 @@
     --space-0: 0;
     --space-1: 4px;
     --space-2: 8px;
-    --space-3: 10px;
+    --space-3: 12px;
     --space-4: 16px;
     --space-5: 24px;
     --space-6: 32px;
@@ -18,6 +18,11 @@
     --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+.pd_lr0{
+    padding-left: 0px !important;
+    padding-right: 0px !important;
+}
+
 .pd_lr4{
     padding-left: var(--space-4) !important;
     padding-right: var(--space-4) !important;
@@ -25,6 +30,10 @@
 
 .pd_t4{
     padding-top: var(--space-4) !important;
+}
+
+.pd_b4{
+    padding-bottom: var(--space-4) !important;
 }
 
 .hstack{
@@ -41,8 +50,16 @@
     justify-content: space-between !important;
 }
 
+.aic{
+    align-items: center !important;
+}
+
 .gap2{
     gap: var(--space-2) !important;
+}
+
+.gap3{
+    gap: var(--space-3) !important;
 }
 
 .gap4{

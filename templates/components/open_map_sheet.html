@@ -1,0 +1,20 @@
+<!--Open map-->
+<div class="sheet-backdrop" id="openMapSheetBackdrop" aria-hidden="true"></div>
+<section class="sheet sheet--info" id="openMapSheet" aria-hidden="true">
+    <div class="sheet__handle"></div>
+    <div class="sheet__content">
+      <header class="sheet__header">
+        <h2 class="prime100">Open place</h2>
+        <button class="btn_icon_ghost" type="button" id="openMapSheetClose" aria-label="Закрыть шторку">
+          <img src="{{ url_for('static', filename='img/icons/cross.svg') }}" alt="Close">
+        </button>
+      </header>
+      <div class="cell-list" id="openMapServiceList">
+        <button class="cell" type="button prime-100" data-map-service="2gis">2GIS</button>
+        <button class="cell" type="button prime-100" data-map-service="yandex">Yandex Maps</button>
+        <button class="cell" type="button prime-100" data-map-service="apple">Apple Maps</button>
+        <button class="cell" type="button prime-100" data-map-service="google">Google Maps</button>
+        <button class="cell" type="button prime-100" data-map-service="organic">Organic Maps</button>
+      </div>
+    </div>
+</section>

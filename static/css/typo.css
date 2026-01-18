@@ -5,17 +5,23 @@ h1, h2, h3, h4, h5, h6,p,a,li,span,div,button, input, textarea{
 }
 
 h2{
-    font-size: var(--space-6);
-    line-height: var(--space-7);
+    font-size: var(--space-6) !important;
+    line-height: var(--space-7) !important;
     font-weight: 600;
     letter-spacing: -2%;
 }
 
 h3{
-    font-size: var(--space-5);
-    line-height: var(--space-6);
+    font-size: var(--space-5) !important;
+    line-height: var(--space-6) !important;
     font-weight: 600;
     letter-spacing: -2%;
+}
+
+p{
+    font-size: var(--space-4) !important;
+    line-height: var(--space-5) !important;
+    letter-spacing: 0%;
 }
 
 button{
@@ -36,6 +42,10 @@ button{
 
 .tac{
     text-align: center;
+}
+
+.fw500{
+    font-weight: 500 !important;
 }
 
 .fw700{

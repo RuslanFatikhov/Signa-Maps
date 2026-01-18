@@ -1,0 +1,21 @@
+<!--QR sheet-->
+<div class="sheet-backdrop" id="shareQrBackdrop" aria-hidden="true"></div>
+<section class="sheet sheet--info" id="shareQrSheet" aria-hidden="true">
+    <div class="sheet__handle"></div>
+    <div class="sheet__content">
+      <header class="sheet__header">
+        <h2 class="prime100">QR-Code</h2>
+        <button class="btn_icon_ghost" type="button" id="shareQrClose" aria-label="Закрыть шторку">
+          <img src="{{ url_for('static', filename='img/icons/cross.svg') }}" alt="Close">
+        </button>
+      </header>
+      <div class="share-qr-sheet">
+        <div class="share-qr__code" id="shareQrSheetCode"></div>
+        <p class="caption secondary-200" id="shareQrSheetStatus"></p>
+      </div>
+      <div class="sheet__submit share-qr-submit">
+        <button class="btn_label_stroke" id="shareQrDownload" type="button">Download QR</button>
+        <button class="btn_label_fill_primary" id="shareQrDone" type="button">Done</button>
+      </div>
+    </div>
+</section>
