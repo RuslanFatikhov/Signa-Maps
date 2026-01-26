@@ -3,6 +3,7 @@ const GeoStore = (() => {
   const TITLE_KEY = "geonotion:title";
   const LISTS_KEY = "geonotion:lists";
   const ACTIVE_LIST_KEY = "geonotion:active-list";
+  const MIGRATION_KEY = "geonotion:idb-migrated";
   const DB_NAME = "geonotion";
   const DB_VERSION = 1;
   const STORE_NAME = "kv";
@@ -10,6 +11,7 @@ const GeoStore = (() => {
     lists: null,
     activeListId: null,
     idbReady: false,
+    migrationDone: false,
   };
 
   const openDb = () =>
@@ -51,22 +53,73 @@ const GeoStore = (() => {
         tx.onerror = () => reject(tx.error);
       });
     } catch (err) {
-      // Fallback stays in localStorage.
+      // Fallback stays in memory/localStorage.
     }
+  };
+
+  const createId = () => {
+    return crypto.randomUUID ? crypto.randomUUID() : `place-${Date.now()}-${Math.random()}`;
+  };
+
+  const ensureMigration = async () => {
+    if (state.migrationDone) return;
+    if (localStorage.getItem(MIGRATION_KEY) === "1") {
+      state.migrationDone = true;
+      return;
+    }
+
+    let migratedLists = null;
+    try {
+      const legacyListsRaw = localStorage.getItem(LISTS_KEY);
+      if (legacyListsRaw) {
+        migratedLists = JSON.parse(legacyListsRaw);
+      }
+    } catch (err) {
+      migratedLists = null;
+    }
+
+    if (!migratedLists) {
+      try {
+        const legacyPlacesRaw = localStorage.getItem(STORAGE_KEY);
+        const legacyTitleRaw = localStorage.getItem(TITLE_KEY);
+        if (legacyPlacesRaw || legacyTitleRaw) {
+          const places = legacyPlacesRaw ? JSON.parse(legacyPlacesRaw) : [];
+          const title = legacyTitleRaw || "My map";
+          migratedLists = [
+            {
+              id: createId(),
+              title,
+              places,
+              createdAt: new Date().toISOString(),
+            },
+          ];
+        }
+      } catch (err) {
+        migratedLists = null;
+      }
+    }
+
+    if (migratedLists) {
+      await idbSet(LISTS_KEY, migratedLists);
+      const activeId = localStorage.getItem(ACTIVE_LIST_KEY);
+      if (activeId) {
+        await idbSet(ACTIVE_LIST_KEY, activeId);
+      }
+    }
+
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(TITLE_KEY);
+    localStorage.removeItem(LISTS_KEY);
+    localStorage.setItem(MIGRATION_KEY, "1");
+    state.migrationDone = true;
   };
 
   const load = () => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch (err) {
-      console.warn("Failed to parse saved places", err);
-      return [];
-    }
+    return [];
   };
 
   const save = (places) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(places));
+    idbSet(STORAGE_KEY, places || []);
   };
 
   const loadTitle = () => {
@@ -79,28 +132,12 @@ const GeoStore = (() => {
   };
 
   const loadLists = () => {
-    if (state.lists) return state.lists;
-    try {
-      const raw = localStorage.getItem(LISTS_KEY);
-      if (raw) {
-        state.lists = JSON.parse(raw);
-        return state.lists;
-      }
-      const migrated = migrateLegacy();
-      state.lists = migrated;
-      return migrated;
-    } catch (err) {
-      console.warn("Failed to parse saved lists", err);
-      return [];
-    } finally {
-      if (!state.idbReady) hydrateFromIdb();
-    }
+    return state.lists || [];
   };
 
   const saveLists = (lists) => {
     const payload = lists || [];
     state.lists = payload;
-    localStorage.setItem(LISTS_KEY, JSON.stringify(payload));
     idbSet(LISTS_KEY, payload);
   };
 
@@ -108,7 +145,6 @@ const GeoStore = (() => {
     if (state.activeListId) return state.activeListId;
     const value = localStorage.getItem(ACTIVE_LIST_KEY);
     state.activeListId = value;
-    if (!state.idbReady) hydrateFromIdb();
     return value;
   };
 
@@ -119,67 +155,29 @@ const GeoStore = (() => {
     idbSet(ACTIVE_LIST_KEY, id);
   };
 
-  const createId = () => {
-    return crypto.randomUUID ? crypto.randomUUID() : `place-${Date.now()}-${Math.random()}`;
-  };
-
-  const migrateLegacy = () => {
-    try {
-      const legacyPlaces = localStorage.getItem(STORAGE_KEY);
-      const legacyTitleRaw = localStorage.getItem(TITLE_KEY);
-      if (legacyPlaces == null && legacyTitleRaw == null) {
-        return [];
-      }
-      const legacyTitle = legacyTitleRaw || "My map";
-      const places = legacyPlaces ? JSON.parse(legacyPlaces) : [];
-      const list = {
-        id: createId(),
-        title: legacyTitle,
-        places,
-        createdAt: new Date().toISOString(),
-      };
-      saveLists([list]);
-      saveActiveListId(list.id);
-      return [list];
-    } catch (err) {
-      console.warn("Legacy migration failed", err);
-      return [];
-    }
-  };
-
   const hydrateFromIdb = async () => {
     if (state.idbReady) return;
     state.idbReady = true;
+    await ensureMigration();
     const lists = await idbGet(LISTS_KEY);
     const activeId = await idbGet(ACTIVE_LIST_KEY);
-    if (lists && !localStorage.getItem(LISTS_KEY)) {
+    if (lists) {
       state.lists = lists;
-      localStorage.setItem(LISTS_KEY, JSON.stringify(lists));
     }
-    if (activeId && !localStorage.getItem(ACTIVE_LIST_KEY)) {
+    if (activeId) {
       state.activeListId = activeId;
       localStorage.setItem(ACTIVE_LIST_KEY, activeId);
     }
   };
 
   const loadListsAsync = async () => {
-    const lists = await idbGet(LISTS_KEY);
-    if (lists) {
-      state.lists = lists;
-      localStorage.setItem(LISTS_KEY, JSON.stringify(lists));
-      return lists;
-    }
-    return loadLists();
+    await hydrateFromIdb();
+    return state.lists || [];
   };
 
   const loadActiveListIdAsync = async () => {
-    const activeId = await idbGet(ACTIVE_LIST_KEY);
-    if (activeId) {
-      state.activeListId = activeId;
-      localStorage.setItem(ACTIVE_LIST_KEY, activeId);
-      return activeId;
-    }
-    return loadActiveListId();
+    await hydrateFromIdb();
+    return state.activeListId || localStorage.getItem(ACTIVE_LIST_KEY);
   };
 
   return {

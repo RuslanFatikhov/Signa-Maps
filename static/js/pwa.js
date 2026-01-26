@@ -2,6 +2,20 @@
   const isStandalone =
     window.matchMedia("(display-mode: standalone)").matches ||
     window.navigator.standalone === true;
+  const statusEl = document.getElementById("connectionStatus");
+  const hintEl = document.getElementById("offlineHint");
+  const updateBanner = document.getElementById("updateBanner");
+  const updateRefreshBtn = document.getElementById("updateBannerRefresh");
+  let waitingWorker = null;
+  let refreshTriggered = false;
+
+  const setConnectionStatus = () => {
+    if (!statusEl) return;
+    const online = navigator.onLine;
+    statusEl.textContent = online ? "Online" : "Offline";
+    statusEl.classList.toggle("is-offline", !online);
+    if (hintEl) hintEl.hidden = online;
+  };
 
   if (isStandalone) {
     const ensureKeyboard = (event) => {
@@ -15,13 +29,46 @@
     document.addEventListener("click", ensureKeyboard);
   }
 
+  setConnectionStatus();
+  window.addEventListener("online", setConnectionStatus);
+  window.addEventListener("offline", setConnectionStatus);
+
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
         .register("/static/sw.js", { scope: "/" })
+        .then((reg) => {
+          if (!reg) return;
+          if (reg.waiting) {
+            waitingWorker = reg.waiting;
+            if (updateBanner) updateBanner.hidden = false;
+          }
+          reg.addEventListener("updatefound", () => {
+            const newWorker = reg.installing;
+            if (!newWorker) return;
+            newWorker.addEventListener("statechange", () => {
+              if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+                waitingWorker = newWorker;
+                if (updateBanner) updateBanner.hidden = false;
+              }
+            });
+          });
+        })
         .catch((error) => {
           console.warn("Service worker registration failed:", error);
         });
     });
   }
+
+  updateRefreshBtn?.addEventListener("click", () => {
+    if (!waitingWorker) return;
+    refreshTriggered = true;
+    waitingWorker.postMessage({ type: "SKIP_WAITING" });
+  });
+
+  navigator.serviceWorker?.addEventListener?.("controllerchange", () => {
+    if (!refreshTriggered) return;
+    refreshTriggered = false;
+    window.location.reload();
+  });
 })();

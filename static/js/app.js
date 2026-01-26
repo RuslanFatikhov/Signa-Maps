@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let remoteSharePassword = "";
     let pendingShare = null;
 
+  const appLoading = document.getElementById("appLoading");
   const undoBanner = document.getElementById("undoBanner");
   const undoText = document.getElementById("undoText");
   const undoBtn = document.getElementById("undoBtn");
@@ -176,8 +177,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (isLocalMode || (!routeShareId && !decodedPayload)) {
-      const localLists = GeoStore.loadLists();
-      const activeId = GeoStore.loadActiveListId();
+      const localLists = await GeoStore.loadListsAsync();
+      const activeId = await GeoStore.loadActiveListIdAsync();
       const resolvedId = localLists.find((l) => l.id === activeId)?.id || localLists[0]?.id || null;
       return {
         lists: localLists,
@@ -844,6 +845,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   renderListsPanel();
   renderPlaces();
+  if (appLoading) appLoading.classList.add("is-hidden");
   };
 
   init();

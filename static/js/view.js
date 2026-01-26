@@ -25,6 +25,7 @@ const GeoView = (() => {
   const openMapSheetClose = document.getElementById("openMapSheetClose");
   const serviceButtons = document.querySelectorAll("[data-map-service]");
   const mapStyleUrl = window.MAPBOX_STYLE_URL || "mapbox://styles/mapbox/streets-v12";
+  const mapLinks = window.GeoMapLinks || {};
 
   if (sheet) {
     sheet.classList.remove("is-open");
@@ -189,15 +190,65 @@ const GeoView = (() => {
       case "google":
         return `https://www.google.com/maps/search/?api=1&query=${coords}`;
       case "organic": {
-        const query = `${lat.toFixed(6)},${lng.toFixed(6)}(${title})`;
-        return `geo:${coords}?q=${encodeURIComponent(query)}`;
+        const name = place.title ? place.title.trim() : "";
+        return mapLinks.buildOrganicMapsUrl?.({ lat, lon: lng, name }) || "";
       }
       case "yandex": {
-        const ll = `${lng.toFixed(6)},${lat.toFixed(6)}`;
-        return `https://yandex.ru/maps/?pt=${ll}&z=16&text=${encodeURIComponent(title)}`;
+        const name = place.title ? place.title.trim() : "";
+        return mapLinks.buildYandexUrl?.({ lat, lon: lng, name }) || "";
       }
       default:
         return "";
+    }
+  };
+
+  const copyToClipboard = async (text) => {
+    const value = text == null ? "" : String(text).trim();
+    if (!value) return false;
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      return true;
+    }
+    const textarea = document.createElement("textarea");
+    textarea.value = value;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "absolute";
+    textarea.style.left = "-9999px";
+    textarea.style.top = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    let ok = false;
+    try {
+      ok = document.execCommand("copy");
+    } catch (err) {
+      ok = false;
+    }
+    document.body.removeChild(textarea);
+    return ok;
+  };
+
+  const showCopyToast = (title) => {
+    if (!title) return;
+    GeoToast?.show?.({ title });
+  };
+
+  const handleCopyTitle = async () => {
+    const text = currentPlace?.title || currentPlace?.name || "";
+    try {
+      const ok = await copyToClipboard(text);
+      if (ok) showCopyToast("Название скопировано");
+    } catch (err) {
+      console.warn("Clipboard error", err);
+    }
+  };
+
+  const handleCopyAddress = async () => {
+    const text = currentPlace?.address || "";
+    try {
+      const ok = await copyToClipboard(text);
+      if (ok) showCopyToast("Адрес скопирован");
+    } catch (err) {
+      console.warn("Clipboard error", err);
     }
   };
 
@@ -238,6 +289,7 @@ const GeoView = (() => {
     const url = buildServiceUrl(service, currentPlace);
     if (url) {
       window.open(url, "_blank", "noopener");
+      GeoAnalytics?.track?.(`external_map_opened_${service}`);
     }
     closeOpenMapSheet();
     close();
@@ -261,7 +313,8 @@ const GeoView = (() => {
 
   const ensureViewMap = () => {
     if (!viewMapEl || viewMap) return;
-    if (typeof mapboxgl === "undefined") {
+    if (!navigator.onLine || typeof mapboxgl === "undefined") {
+      viewMapEl.classList.add("view-map--offline");
       viewMapEl.textContent = "Карта недоступна";
       return;
     }
@@ -277,6 +330,8 @@ const GeoView = (() => {
         pitchWithRotate: false,
         touchZoomRotate: false,
       });
+      viewMapEl.classList.remove("view-map--offline");
+      viewMapEl.textContent = "";
       if (viewMap.scrollZoom) viewMap.scrollZoom.disable();
       if (viewMap.boxZoom) viewMap.boxZoom.disable();
       if (viewMap.dragPan) viewMap.dragPan.disable();
@@ -291,7 +346,16 @@ const GeoView = (() => {
   const setViewMarker = (lat, lng) => {
     ensureViewMap();
     if (!viewMap) {
-      if (viewMapEl) viewMapEl.textContent = formatCoords({ lat, lng });
+      if (viewMapEl) {
+        viewMapEl.classList.add("view-map--offline");
+        viewMapEl.innerHTML = "";
+        const message = document.createElement("span");
+        message.textContent = "Карта недоступна";
+        const coords = document.createElement("span");
+        coords.className = "map-placeholder__coords";
+        coords.textContent = formatCoords({ lat, lng });
+        viewMapEl.append(message, coords);
+      }
       return;
     }
     const target = [lng, lat];
@@ -374,6 +438,8 @@ const GeoView = (() => {
   shareBtn?.addEventListener("click", sharePlace);
   openBtn?.addEventListener("click", openMapServices);
   editBtn?.addEventListener("click", handleEdit);
+  titleEl?.addEventListener("click", handleCopyTitle);
+  addressEl?.addEventListener("click", handleCopyAddress);
 
   listToggleButtons.forEach((btn) => {
     btn.addEventListener("click", openListsPanel);

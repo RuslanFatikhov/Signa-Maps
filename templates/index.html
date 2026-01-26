@@ -5,6 +5,7 @@
 {% block content %}
 <div class="app-shell">
   <div class="app-stage" id="appStage">
+    <div class="app-loading" id="appLoading" aria-live="polite">Loading…</div>
   
     
 
@@ -22,6 +23,8 @@
         <div class="header  vstack gap2">
           <h2 id="listTitle" class="prime100">My map</h2>
           <input id="listTitleInput" class="listTitleInput" type="text" value="My map" style="display:none;">
+          <div class="connection-status" id="connectionStatus" aria-live="polite"></div>
+          <p class="connection-hint" id="offlineHint" hidden>Offline: map tiles may be unavailable.</p>
 
           <!--List header-->
           <div class="hstack list-header">
@@ -183,6 +186,7 @@
   {{ super() }}
   <script src="{{ url_for('static', filename='js/qr.js') }}"></script>
   <script src="{{ url_for('static', filename='js/toast.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/map_links.js') }}"></script>
   <script src="{{ url_for('static', filename='js/storage.js') }}"></script>
   <script src="{{ url_for('static', filename='js/map.js') }}"></script>
   <script src="{{ url_for('static', filename='js/render.js') }}"></script>
