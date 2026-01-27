@@ -33,6 +33,8 @@ const GeoShare = (() => {
   let passwordEditing = false;
   let lastQrLink = "";
   const SHARE_ID_STORAGE_KEY = "geoShareId";
+  const SHARE_MAP_STORAGE_KEY = "geoShareMap";
+  const SHARE_PASSWORD_STORAGE_PREFIX = "geoSharePassword:";
 
   const getStoredShareId = () => {
     try {
@@ -48,6 +50,61 @@ const GeoShare = (() => {
       localStorage.setItem(SHARE_ID_STORAGE_KEY, shareId);
     } catch (err) {
       // Storage can be unavailable in private mode or blocked by browser settings.
+    }
+  };
+
+  const loadShareMap = () => {
+    try {
+      const raw = localStorage.getItem(SHARE_MAP_STORAGE_KEY);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch (err) {
+      return {};
+    }
+  };
+
+  const saveShareMap = (map) => {
+    try {
+      localStorage.setItem(SHARE_MAP_STORAGE_KEY, JSON.stringify(map || {}));
+    } catch (err) {
+      // Ignore storage failures.
+    }
+  };
+
+  const setShareMapping = (listId, shareId) => {
+    if (!listId || !shareId) return;
+    const map = loadShareMap();
+    if (map[listId] === shareId) return;
+    map[listId] = shareId;
+    saveShareMap(map);
+  };
+
+  const getShareIdForList = (listId) => {
+    if (!listId) return null;
+    const map = loadShareMap();
+    return map[listId] || null;
+  };
+
+  const storeSharePassword = (shareId, password) => {
+    if (!shareId) return;
+    try {
+      if (password) {
+        localStorage.setItem(`${SHARE_PASSWORD_STORAGE_PREFIX}${shareId}`, password);
+      } else {
+        localStorage.removeItem(`${SHARE_PASSWORD_STORAGE_PREFIX}${shareId}`);
+      }
+    } catch (err) {
+      // Ignore storage failures.
+    }
+  };
+
+  const getSharePassword = (shareId) => {
+    if (!shareId) return "";
+    try {
+      return localStorage.getItem(`${SHARE_PASSWORD_STORAGE_PREFIX}${shareId}`) || "";
+    } catch (err) {
+      return "";
     }
   };
 
@@ -583,6 +640,7 @@ const GeoShare = (() => {
     return {
       places: GeoStore?.load ? GeoStore.load() : [],
       title: GeoStore?.loadTitle ? GeoStore.loadTitle() : "My map",
+      listId: null,
     };
   };
 
@@ -625,19 +683,25 @@ const GeoShare = (() => {
 
   const getActiveShareId = () => {
     const current = getCurrentShareContext();
+    const { listId } = getData();
     if (current.shareId) {
       storeShareId(current.shareId);
+      if (listId) setShareMapping(listId, current.shareId);
       return current.shareId;
     }
     if (remoteShare?.id) {
       storeShareId(remoteShare.id);
+      if (listId) setShareMapping(listId, remoteShare.id);
       return remoteShare.id;
     }
     if (remoteShare?.viewUrl) {
       try {
         const url = new URL(remoteShare.viewUrl);
         const shareId = url.searchParams.get("share_id");
-        if (shareId) storeShareId(shareId);
+        if (shareId) {
+          storeShareId(shareId);
+          if (listId) setShareMapping(listId, shareId);
+        }
         return shareId;
       } catch (err) {
         return null;
@@ -963,7 +1027,7 @@ ${items}
   };
 
   const createRemoteShare = async () => {
-    const { places, title } = getData();
+    const { places, title, listId } = getData();
     if (!places.length) {
       alert("Нет мест для ссылки.");
       return null;
@@ -976,7 +1040,9 @@ ${items}
         body: JSON.stringify({ title, places: normalized }),
       });
       if (!response.ok) throw new Error("Share create failed");
-      return await response.json();
+      const share = await response.json();
+      if (share?.id && listId) setShareMapping(listId, share.id);
+      return share;
     } catch (err) {
       console.warn("Remote share create failed", err);
       alert("Не удалось создать ссылку.");
@@ -992,6 +1058,8 @@ ${items}
         if (share?.editUrl) {
           remoteShare = share;
           storeShareId(share.id);
+          const { listId } = getData();
+          if (share?.id && listId) setShareMapping(listId, share.id);
         }
         return share;
       })
@@ -1080,6 +1148,7 @@ ${items}
       });
       if (!response.ok) throw new Error("Password set failed");
       passwordSet = true;
+      storeSharePassword(shareId, password);
       updatePasswordStatus();
       return true;
     } catch (err) {
@@ -1096,6 +1165,7 @@ ${items}
       const response = await fetch(`/api/share/${shareId}/password`, { method: "DELETE" });
       if (!response.ok) throw new Error("Password delete failed");
       passwordSet = false;
+      storeSharePassword(shareId, "");
       updatePasswordStatus();
       return true;
     } catch (err) {
@@ -1213,5 +1283,13 @@ ${items}
     dataProvider = fn;
   };
 
-  return { open, close, decodePayload, setDataProvider, normalizePlaces };
+  return {
+    open,
+    close,
+    decodePayload,
+    setDataProvider,
+    normalizePlaces,
+    getShareIdForList,
+    getSharePassword,
+  };
 })();

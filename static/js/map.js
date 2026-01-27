@@ -5,6 +5,11 @@ const GeoMap = (() => {
   let onPickCb;
   let ignoreMapClickUntil = 0;
   let mapContainer;
+  let mapboxInitArgs = null;
+  let mapboxLoadListener = false;
+  let onlineListenerAdded = false;
+  let mapInitTimer = null;
+  let mapInitAttempts = 0;
 
   const ensureMapboxToken = () => {
     if (typeof mapboxgl === "undefined") return;
@@ -39,24 +44,75 @@ const GeoMap = (() => {
     }
   };
 
+  const scheduleInit = () => {
+    if (mapInitTimer) return;
+    mapInitAttempts = 0;
+    mapInitTimer = setInterval(() => {
+      mapInitAttempts += 1;
+      if (!mapContainer) return;
+      if (!navigator.onLine) return;
+      if (typeof mapboxgl === "undefined") {
+        if (mapInitAttempts >= 50) {
+          clearInterval(mapInitTimer);
+          mapInitTimer = null;
+        }
+        return;
+      }
+      if (mapContainer.clientWidth === 0 || mapContainer.clientHeight === 0) {
+        if (mapInitAttempts >= 50) {
+          clearInterval(mapInitTimer);
+          mapInitTimer = null;
+        }
+        return;
+      }
+      clearInterval(mapInitTimer);
+      mapInitTimer = null;
+      init(mapboxInitArgs || {});
+    }, 200);
+  };
+
   const init = ({ onSelect, onPick } = {}) => {
     mapContainer = document.getElementById("map");
     if (!mapContainer) return;
+    if (map) return;
     onSelectCb = onSelect;
     onPickCb = onPick;
+    mapboxInitArgs = { onSelect, onPick };
 
     if (!navigator.onLine) {
       showPlaceholder("Карта недоступна");
+      if (!onlineListenerAdded) {
+        onlineListenerAdded = true;
+        window.addEventListener("online", () => init(mapboxInitArgs || {}));
+      }
+      return;
+    }
+
+    if (mapContainer.clientWidth === 0 || mapContainer.clientHeight === 0) {
+      scheduleInit();
       return;
     }
 
     if (typeof mapboxgl === "undefined") {
-      showPlaceholder("Map failed to load. Проверьте подключение.");
+      mapboxInitArgs = { onSelect, onPick };
+      if (!mapboxLoadListener) {
+        mapboxLoadListener = true;
+        window.addEventListener(
+          "load",
+          () => {
+            if (typeof mapboxgl === "undefined") return;
+            init(mapboxInitArgs || {});
+          },
+          { once: true }
+        );
+      }
+      scheduleInit();
       return;
     }
 
     try {
       ensureMapboxToken();
+      mapContainer.innerHTML = "";
       map = new mapboxgl.Map({
         container: "map",
         style: getMapStyle(),

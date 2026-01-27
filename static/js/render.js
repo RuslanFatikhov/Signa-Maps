@@ -60,9 +60,9 @@ const GeoRender = (() => {
         card.dataset.placeId = place.id;
         const address = place.address || formatCoords(place);
         card.innerHTML = `
-            <div>
-              <h3 class="card-title">${place.title}</h3>
-              <p class="card-meta caption">${address}</p>
+            <div class="vstack">
+              <span class="card-title">${place.title}</span>
+              <span class="card-meta caption">${address}</span>
               ${place.photos?.length ? `<p class="card-meta">${place.photos.length} фото</p>` : ""}
             </div>
           

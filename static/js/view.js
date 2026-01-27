@@ -41,6 +41,13 @@ const GeoView = (() => {
   let handlers = { onEdit: null, onShare: null };
   let viewMap = null;
   let viewMarker = null;
+  let viewMapRetryTimer = null;
+  let viewMapRetryAttempts = 0;
+  let pendingViewCoords = null;
+  let onlineListenerAdded = false;
+  let viewInitTimer = null;
+  let viewInitAttempts = 0;
+  let viewMapObserver = null;
 
   const ensureMapboxToken = () => {
     if (typeof mapboxgl === "undefined") return;
@@ -236,7 +243,7 @@ const GeoView = (() => {
     const text = currentPlace?.title || currentPlace?.name || "";
     try {
       const ok = await copyToClipboard(text);
-      if (ok) showCopyToast("Название скопировано");
+      if (ok) showCopyToast("Name copied");
     } catch (err) {
       console.warn("Clipboard error", err);
     }
@@ -246,7 +253,7 @@ const GeoView = (() => {
     const text = currentPlace?.address || "";
     try {
       const ok = await copyToClipboard(text);
-      if (ok) showCopyToast("Адрес скопирован");
+      if (ok) showCopyToast("Addres copied");
     } catch (err) {
       console.warn("Clipboard error", err);
     }
@@ -311,15 +318,115 @@ const GeoView = (() => {
     }
   };
 
+  const scheduleViewInit = () => {
+    if (viewInitTimer) return;
+    viewInitAttempts = 0;
+    viewInitTimer = setInterval(() => {
+      viewInitAttempts += 1;
+      if (!viewMapEl) return;
+      if (!navigator.onLine) return;
+      if (typeof mapboxgl === "undefined") {
+        if (viewInitAttempts >= 50) {
+          clearInterval(viewInitTimer);
+          viewInitTimer = null;
+        }
+        return;
+      }
+      if (viewMapEl.clientWidth === 0 || viewMapEl.clientHeight === 0) {
+        if (viewInitAttempts >= 50) {
+          clearInterval(viewInitTimer);
+          viewInitTimer = null;
+        }
+        return;
+      }
+      clearInterval(viewInitTimer);
+      viewInitTimer = null;
+      ensureViewMap();
+    }, 200);
+  };
+
+  const observeViewMapSize = () => {
+    if (!viewMapEl || viewMapObserver || typeof ResizeObserver === "undefined") return;
+    viewMapObserver = new ResizeObserver(() => {
+      if (!viewMapEl || viewMap) return;
+      if (viewMapEl.clientWidth === 0 || viewMapEl.clientHeight === 0) return;
+      if (pendingViewCoords) {
+        const { lat, lng } = pendingViewCoords;
+        ensureViewMap();
+        if (viewMap) setViewMarker(lat, lng);
+      } else {
+        ensureViewMap();
+      }
+    });
+    viewMapObserver.observe(viewMapEl);
+  };
+
+  const ensureViewMapRendered = () => {
+    if (!viewMapEl) return;
+    if (!navigator.onLine || typeof mapboxgl === "undefined") return;
+    const hasCanvas = viewMapEl.querySelector("canvas");
+    if (hasCanvas) return;
+    if (viewMap) {
+      try {
+        viewMap.remove();
+      } catch (err) {
+        // Ignore cleanup failures.
+      }
+      viewMap = null;
+    }
+    ensureViewMap();
+    if (pendingViewCoords && viewMap) {
+      const { lat, lng } = pendingViewCoords;
+      setViewMarker(lat, lng);
+    }
+  };
+
   const ensureViewMap = () => {
     if (!viewMapEl || viewMap) return;
     if (!navigator.onLine || typeof mapboxgl === "undefined") {
-      viewMapEl.classList.add("view-map--offline");
-      viewMapEl.textContent = "Карта недоступна";
+      if (!navigator.onLine) {
+        viewMapEl.classList.add("view-map--offline");
+        viewMapEl.textContent = "";
+        if (!onlineListenerAdded) {
+          onlineListenerAdded = true;
+          window.addEventListener("online", () => {
+            if (pendingViewCoords) {
+              const { lat, lng } = pendingViewCoords;
+              ensureViewMap();
+              if (viewMap) setViewMarker(lat, lng);
+            } else {
+              ensureViewMap();
+            }
+          });
+        }
+        return;
+      }
+      scheduleViewInit();
+      if (!viewMapRetryTimer) {
+        viewMapRetryAttempts = 0;
+        viewMapRetryTimer = setInterval(() => {
+          viewMapRetryAttempts += 1;
+          if (typeof mapboxgl !== "undefined") {
+            clearInterval(viewMapRetryTimer);
+            viewMapRetryTimer = null;
+            ensureViewMap();
+            return;
+          }
+          if (viewMapRetryAttempts >= 50) {
+            clearInterval(viewMapRetryTimer);
+            viewMapRetryTimer = null;
+          }
+        }, 200);
+      }
+      return;
+    }
+    if (viewMapEl.clientWidth === 0 || viewMapEl.clientHeight === 0) {
+      scheduleViewInit();
       return;
     }
     try {
       ensureMapboxToken();
+      viewMapEl.innerHTML = "";
       viewMap = new mapboxgl.Map({
         container: viewMapEl,
         style: mapStyleUrl,
@@ -337,6 +444,11 @@ const GeoView = (() => {
       if (viewMap.dragPan) viewMap.dragPan.disable();
       if (viewMap.touchZoomRotate) viewMap.touchZoomRotate.disable();
       if (viewMap.doubleClickZoom) viewMap.doubleClickZoom.disable();
+      if (pendingViewCoords) {
+        const { lat, lng } = pendingViewCoords;
+        pendingViewCoords = null;
+        setViewMarker(lat, lng);
+      }
     } catch (err) {
       console.warn("View map init failed", err);
       viewMap = null;
@@ -344,10 +456,16 @@ const GeoView = (() => {
   };
 
   const setViewMarker = (lat, lng) => {
+    pendingViewCoords = { lat, lng };
     ensureViewMap();
     if (!viewMap) {
       if (viewMapEl) {
-        viewMapEl.classList.add("view-map--offline");
+        if (!navigator.onLine) {
+          viewMapEl.classList.add("view-map--offline");
+          viewMapEl.innerHTML = "";
+          return;
+        }
+        viewMapEl.classList.remove("view-map--offline");
         viewMapEl.innerHTML = "";
         const message = document.createElement("span");
         message.textContent = "Карта недоступна";
@@ -376,6 +494,38 @@ const GeoView = (() => {
     }
   };
 
+  const rebuildViewMap = (lat, lng) => {
+    if (!viewMapEl) return;
+    if (!navigator.onLine || typeof mapboxgl === "undefined") return;
+    try {
+      if (viewMap) {
+        viewMap.remove();
+        viewMap = null;
+      }
+    } catch (err) {
+      viewMap = null;
+    }
+    viewMapEl.innerHTML = "";
+    viewMapEl.classList.remove("view-map--offline");
+    ensureMapboxToken();
+    viewMap = new mapboxgl.Map({
+      container: viewMapEl,
+      style: mapStyleUrl,
+      center: [lng, lat],
+      zoom: 14,
+      attributionControl: false,
+      dragRotate: false,
+      pitchWithRotate: false,
+      touchZoomRotate: false,
+    });
+    if (viewMap.scrollZoom) viewMap.scrollZoom.disable();
+    if (viewMap.boxZoom) viewMap.boxZoom.disable();
+    if (viewMap.dragPan) viewMap.dragPan.disable();
+    if (viewMap.touchZoomRotate) viewMap.touchZoomRotate.disable();
+    if (viewMap.doubleClickZoom) viewMap.doubleClickZoom.disable();
+    viewMarker = new mapboxgl.Marker({ color: "#121212" }).setLngLat([lng, lat]).addTo(viewMap);
+  };
+
   const open = (place) => {
     if (!place) return;
     currentPlace = place;
@@ -400,7 +550,6 @@ const GeoView = (() => {
       });
     }
     renderPhotos(place.photos || []);
-    setViewMarker(place.lat, place.lng);
 
     if (sheet) {
       sheet.classList.add("is-open");
@@ -410,9 +559,24 @@ const GeoView = (() => {
       backdrop.classList.add("is-open");
       backdrop.setAttribute("aria-hidden", "false");
     }
-    if (viewMap) {
-      setTimeout(() => viewMap.resize(), 150);
-    }
+    observeViewMapSize();
+    setTimeout(() => {
+      if (currentPlace) {
+        setViewMarker(currentPlace.lat, currentPlace.lng);
+      }
+      if (viewMap) {
+        setTimeout(() => viewMap.resize(), 150);
+      }
+    }, 50);
+    setTimeout(ensureViewMapRendered, 400);
+    setTimeout(() => {
+      if (!currentPlace) return;
+      if (!viewMapEl) return;
+      const hasCanvas = viewMapEl.querySelector("canvas");
+      if (!hasCanvas && navigator.onLine) {
+        rebuildViewMap(currentPlace.lat, currentPlace.lng);
+      }
+    }, 800);
   };
 
   const configure = ({ onEdit, onShare, readOnlyMode } = {}) => {

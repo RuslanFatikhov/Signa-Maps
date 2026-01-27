@@ -2,19 +2,17 @@
   const isStandalone =
     window.matchMedia("(display-mode: standalone)").matches ||
     window.navigator.standalone === true;
-  const statusEl = document.getElementById("connectionStatus");
   const hintEl = document.getElementById("offlineHint");
+  const viewMapEl = document.getElementById("viewMap");
   const updateBanner = document.getElementById("updateBanner");
   const updateRefreshBtn = document.getElementById("updateBannerRefresh");
   let waitingWorker = null;
   let refreshTriggered = false;
 
   const setConnectionStatus = () => {
-    if (!statusEl) return;
     const online = navigator.onLine;
-    statusEl.textContent = online ? "Online" : "Offline";
-    statusEl.classList.toggle("is-offline", !online);
     if (hintEl) hintEl.hidden = online;
+    if (viewMapEl) viewMapEl.classList.toggle("view-map--offline", !online);
   };
 
   if (isStandalone) {

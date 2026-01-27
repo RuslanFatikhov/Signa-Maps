@@ -469,6 +469,7 @@
 .view-map{
     width: 100%;
     min-height: 320px !important;
+    height: 320px;
 }
 
 .sheet_info_information{

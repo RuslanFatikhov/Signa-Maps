@@ -148,6 +148,16 @@ def create_app() -> Flask:
         data = read_analytics()
         return jsonify(data)
 
+    @app.after_request
+    def add_share_cache_headers(response):
+        if request.path.startswith("/api/share"):
+            response.headers["Cache-Control"] = "no-store"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+        if request.path == "/static/sw.js":
+            response.headers["Service-Worker-Allowed"] = "/"
+        return response
+
     @app.post("/api/share")
     def create_share():
         payload = request.get_json(silent=True) or {}
@@ -186,6 +196,27 @@ def create_app() -> Flask:
                 "title": data.get("title") or "My map",
                 "places": data.get("places") or [],
                 "updatedAt": row["updated_at"],
+            }
+        )
+
+    @app.get("/api/share/<share_id>/meta")
+    def get_share_meta(share_id: str):
+        with get_db() as conn:
+            row = conn.execute(
+                "SELECT data, updated_at, password_hash, password_salt FROM shares WHERE id = ?",
+                (share_id,),
+            ).fetchone()
+        if not row:
+            abort(404)
+        if not verify_share_password(row):
+            return jsonify({"error": "password_required"}), 401
+        data = json.loads(row["data"])
+        places = data.get("places") or []
+        return jsonify(
+            {
+                "id": share_id,
+                "updatedAt": row["updated_at"],
+                "placesCount": len(places),
             }
         )
 

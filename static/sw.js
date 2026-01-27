@@ -61,8 +61,24 @@ const CORE_ASSETS = [
   "/static/img/icons/trash.svg",
 ];
 
+const precacheCore = async () => {
+  const cache = await caches.open(CORE_CACHE);
+  await Promise.allSettled(
+    CORE_ASSETS.map(async (asset) => {
+      try {
+        const response = await fetch(asset, { cache: "reload" });
+        if (response && response.ok) {
+          await cache.put(asset, response);
+        }
+      } catch (err) {
+        // Ignore precache failures to avoid install rejection.
+      }
+    })
+  );
+};
+
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CORE_CACHE).then((cache) => cache.addAll(CORE_ASSETS)));
+  event.waitUntil(precacheCore());
 });
 
 self.addEventListener("activate", (event) => {
@@ -144,6 +160,10 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (url.pathname.startsWith("/api/")) {
+    if (url.pathname === "/api/share" || url.pathname.startsWith("/api/share/")) {
+      event.respondWith(fetch(request));
+      return;
+    }
     event.respondWith(networkFirst(request, API_CACHE));
     return;
   }

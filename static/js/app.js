@@ -7,6 +7,9 @@ document.addEventListener("DOMContentLoaded", () => {
     let readOnly = false;
     let remoteSharePassword = "";
     let pendingShare = null;
+    let shareSyncTimer = null;
+    let sharePollTimer = null;
+    let lastShareUpdatedAt = null;
 
   const appLoading = document.getElementById("appLoading");
   const undoBanner = document.getElementById("undoBanner");
@@ -58,6 +61,22 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
+  const loadRemoteShareMeta = async (shareId, password = "") => {
+    if (!shareId) return null;
+    try {
+      const headers = password ? { "X-Share-Password": password } : {};
+      const response = await fetch(`/api/share/${shareId}/meta`, { headers });
+      if (response.status === 401) {
+        return { requiresPassword: true };
+      }
+      if (!response.ok) throw new Error("Remote share meta failed");
+      return await response.json();
+    } catch (err) {
+      console.warn("Remote share meta failed", err);
+      return null;
+    }
+  };
+
   const saveRemoteShare = async (list) => {
     if (!remoteShareId || !remoteEditable) return;
     try {
@@ -73,12 +92,68 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
+  const saveOwnedShare = async (list, shareId) => {
+    if (!shareId) return;
+    try {
+      const headers = { "Content-Type": "application/json" };
+      const password = GeoShare?.getSharePassword?.(shareId) || "";
+      if (password) headers["X-Share-Password"] = password;
+      const normalized =
+        GeoShare?.normalizePlaces && Array.isArray(list.places)
+          ? GeoShare.normalizePlaces(list.places)
+          : list.places || [];
+      await fetch(`/api/share/${shareId}`, {
+        method: "PUT",
+        headers,
+        body: JSON.stringify({ title: list.title || "My map", places: normalized }),
+      });
+    } catch (err) {
+      console.warn("Owned share sync failed", err);
+    }
+  };
+
   const scheduleRemoteSave = (list) => {
     if (!remoteShareId || !remoteEditable) return;
     if (remoteSaveTimer) clearTimeout(remoteSaveTimer);
     remoteSaveTimer = setTimeout(() => saveRemoteShare(list), 400);
   };
 
+  const scheduleOwnedShareSave = (list) => {
+    if (!list || isRemoteShare || readOnly) return;
+    const shareId = GeoShare?.getShareIdForList?.(list.id);
+    if (!shareId) return;
+    if (shareSyncTimer) clearTimeout(shareSyncTimer);
+    shareSyncTimer = setTimeout(() => saveOwnedShare(list, shareId), 400);
+  };
+
+  const stopSharePolling = () => {
+    if (sharePollTimer) {
+      clearInterval(sharePollTimer);
+      sharePollTimer = null;
+    }
+  };
+
+  const startSharePolling = () => {
+    stopSharePolling();
+    if (!isRemoteShare || remoteEditable || !remoteShareId) return;
+    const poll = async () => {
+      const meta = await loadRemoteShareMeta(remoteShareId, remoteSharePassword);
+      if (!meta || meta.requiresPassword) return;
+      if (!lastShareUpdatedAt) {
+        lastShareUpdatedAt = meta.updatedAt || null;
+        return;
+      }
+      if (meta.updatedAt && meta.updatedAt !== lastShareUpdatedAt) {
+        lastShareUpdatedAt = meta.updatedAt;
+        const data = await loadRemoteShare(remoteShareId, remoteSharePassword);
+        if (data && !data.requiresPassword) {
+          applyRemoteShareData(remoteShareId, data, remoteEditable);
+        }
+      }
+    };
+    poll();
+    sharePollTimer = setInterval(poll, 8000);
+  };
   const parseHashRoute = (hashValue) => {
     if (!hashValue || hashValue === "#") {
       return { mode: null, listId: null, params: new URLSearchParams() };
@@ -321,6 +396,7 @@ document.addEventListener("DOMContentLoaded", () => {
       GeoStore.saveActiveListId(currentListId);
     }
     scheduleRemoteSave(updated);
+    scheduleOwnedShareSave(updated);
   };
 
   const getActiveList = () => lists.find((l) => l.id === currentListId) || null;
@@ -441,6 +517,10 @@ document.addEventListener("DOMContentLoaded", () => {
     isRemoteShare = resolved.isRemoteShare;
     remoteShareId = resolved.remoteShareId;
     remoteEditable = resolved.remoteEditable;
+    if (!isRemoteShare || remoteEditable) {
+      stopSharePolling();
+      lastShareUpdatedAt = null;
+    }
   };
 
   const openShareGate = () => {
@@ -479,6 +559,10 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     applyResolvedState(resolved);
+    if (resolved.isRemoteShare && !resolved.remoteEditable) {
+      lastShareUpdatedAt = resolved.lists[0]?.createdAt || null;
+      startSharePolling();
+    }
   };
 
   const applyRemoteShareData = (shareId, remoteData, editable) => {
@@ -501,6 +585,8 @@ document.addEventListener("DOMContentLoaded", () => {
     listsWithPlaces = new Set([list.id].filter(() => (list.places || []).length > 0));
     renderListsPanel();
     syncFromActiveList();
+    lastShareUpdatedAt = remoteData.updatedAt || null;
+    if (!editable) startSharePolling();
   };
 
   const submitShareGate = async () => {
@@ -841,7 +927,11 @@ document.addEventListener("DOMContentLoaded", () => {
   listEditCancel?.addEventListener("click", () => exitListEdit(false));
   listEditSave?.addEventListener("click", () => exitListEdit(true));
 
-  GeoShare?.setDataProvider?.(() => ({ places: getVisiblePlaces(), title: savedTitle }));
+  GeoShare?.setDataProvider?.(() => ({
+    places: getVisiblePlaces(),
+    title: savedTitle,
+    listId: currentListId,
+  }));
 
   renderListsPanel();
   renderPlaces();
