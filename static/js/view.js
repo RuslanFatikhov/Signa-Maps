@@ -197,8 +197,15 @@ const GeoView = (() => {
       case "google":
         return `https://www.google.com/maps/search/?api=1&query=${coords}`;
       case "organic": {
-        const name = place.title ? place.title.trim() : "";
-        return mapLinks.buildOrganicMapsUrl?.({ lat, lon: lng, name }) || "";
+        return "";
+      }
+      case "osm": {
+        const url = mapLinks.buildOpenStreetMapUrl?.({ lat, lon: lng }) || "";
+        console.info("OpenStreetMap link", { lat, lon: lng, url });
+        return url;
+      }
+      case "osm": {
+        return mapLinks.buildOpenStreetMapUrl?.({ lat, lon: lng }) || "";
       }
       case "yandex": {
         const name = place.title ? place.title.trim() : "";
@@ -294,6 +301,50 @@ const GeoView = (() => {
   const openService = (service) => {
     if (!currentPlace) return;
     const url = buildServiceUrl(service, currentPlace);
+    if (service === "organic") {
+      const name = currentPlace.title ? currentPlace.title.trim() : "";
+      const lat = currentPlace.lat;
+      const lon = currentPlace.lng;
+      const links = mapLinks.buildOrganicMapsLinks?.({ lat, lon, name }) || {};
+      const appUrl = links.appUrl || "";
+      const appUrlLegacy = links.appUrlLegacy || "";
+      const appUrlLonLat = links.appUrlLonLat || "";
+      const webUrl = links.webUrl || "";
+      const webUrlLegacy = links.webUrlLegacy || "";
+      const webUrlLonLat = links.webUrlLonLat || "";
+      const webUrlQuery = links.webUrlQuery || "";
+      const webUrlHash = links.webUrlHash || "";
+      console.info("Organic Maps deep link", { lat, lon, ...links });
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
+      if (isMobile) {
+        const target = appUrl || appUrlLegacy || appUrlLonLat;
+        if (target) {
+          window.location.href = target;
+        }
+      } else {
+        const target = webUrlHash || webUrl || webUrlLegacy || webUrlLonLat || webUrlQuery;
+        if (target) {
+          window.open(target, "_blank", "noopener");
+        }
+      }
+      GeoAnalytics?.track?.(`external_map_opened_${service}`);
+      closeOpenMapSheet();
+      close();
+      return;
+    }
+    if (service === "osm") {
+      const lat = currentPlace.lat;
+      const lon = currentPlace.lng;
+      const url = mapLinks.buildOpenStreetMapUrl?.({ lat, lon }) || "";
+      console.info("OpenStreetMap link", { lat, lon, url });
+      if (url) {
+        window.open(url, "_blank", "noopener");
+      }
+      GeoAnalytics?.track?.(`external_map_opened_${service}`);
+      closeOpenMapSheet();
+      close();
+      return;
+    }
     if (url) {
       window.open(url, "_blank", "noopener");
       GeoAnalytics?.track?.(`external_map_opened_${service}`);

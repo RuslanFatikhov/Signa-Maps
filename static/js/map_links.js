@@ -4,7 +4,11 @@ const GeoMapLinks = (() => {
     return Number.isFinite(num) ? num : null;
   };
 
-  const formatCoord = (value) => value.toFixed(6);
+  const formatCoord = (value) => {
+    const num = toNumber(value);
+    if (num == null) return "";
+    return num.toString();
+  };
 
   const buildYandexUrl = ({ lat, lon, name } = {}) => {
     const latNum = toNumber(lat);
@@ -26,7 +30,7 @@ const GeoMapLinks = (() => {
     return "";
   };
 
-  const buildOrganicMapsUrl = ({ lat, lon, name } = {}) => {
+  const buildOrganicMapsUrl = ({ lat, lon, name, scheme = "https", versioned = true } = {}) => {
     const latNum = toNumber(lat);
     const lonNum = toNumber(lon);
     if (latNum == null || lonNum == null) return "";
@@ -35,10 +39,68 @@ const GeoMapLinks = (() => {
     const lonStr = formatCoord(lonNum);
     const safeName = (name || "").trim();
     const label = safeName ? `&n=${encodeURIComponent(safeName)}` : "";
-    return `https://omaps.app/map?v=1&ll=${latStr},${lonStr}${label}`;
+    const version = versioned ? "v=1&" : "";
+    if (scheme === "om") {
+      return `om://map?${version}ll=${latStr},${lonStr}${label}`;
+    }
+    return `https://omaps.app/map?${version}ll=${latStr},${lonStr}${label}`;
   };
 
-  return { buildYandexUrl, buildOrganicMapsUrl };
+  const buildOrganicMapsLinks = ({ lat, lon, name } = {}) => {
+    const latNum = toNumber(lat);
+    const lonNum = toNumber(lon);
+    if (latNum == null || lonNum == null) {
+      return { geoUrl: "", appUrl: "", appUrlLegacy: "", webUrl: "", webUrlLegacy: "" };
+    }
+    const latStr = formatCoord(latNum);
+    const lonStr = formatCoord(lonNum);
+    const safeName = (name || "").trim();
+    const label = safeName ? `&n=${encodeURIComponent(safeName)}` : "";
+    const geoUrl = safeName
+      ? `geo:${latStr},${lonStr}?q=${latStr},${lonStr}(${encodeURIComponent(safeName)})`
+      : `geo:${latStr},${lonStr}`;
+    return {
+      geoUrl,
+      appUrl: `om://map?ll=${latStr},${lonStr}${label}`,
+      appUrlLegacy: `om://map?v=1&ll=${latStr},${lonStr}${label}`,
+      webUrl: `https://omaps.app/map?ll=${latStr},${lonStr}${label}`,
+      webUrlLegacy: `https://omaps.app/map?v=1&ll=${latStr},${lonStr}${label}`,
+      appUrlLonLat: `om://map?ll=${lonStr},${latStr}${label}`,
+      webUrlLonLat: `https://omaps.app/map?ll=${lonStr},${latStr}${label}`,
+      webUrlQuery: `https://omaps.app/map?q=${latStr},${lonStr}${label}`,
+      webUrlHash: `https://omaps.app/map?ll=${latStr},${lonStr}${label}#map=17/${latStr}/${lonStr}`,
+    };
+  };
+
+  const buildOpenStreetMapUrl = ({ lat, lon } = {}) => {
+    const latNum = toNumber(lat);
+    const lonNum = toNumber(lon);
+    if (latNum == null || lonNum == null) return "";
+    const latStr = formatCoord(latNum);
+    const lonStr = formatCoord(lonNum);
+    return `https://www.openstreetmap.org/?mlat=${latStr}&mlon=${lonStr}#map=17/${latStr}/${lonStr}`;
+  };
+
+  const buildGeoUrl = ({ lat, lon, name } = {}) => {
+    const latNum = toNumber(lat);
+    const lonNum = toNumber(lon);
+    if (latNum == null || lonNum == null) return "";
+    const latStr = formatCoord(latNum);
+    const lonStr = formatCoord(lonNum);
+    const safeName = (name || "").trim();
+    if (safeName) {
+      return `geo:${latStr},${lonStr}?q=${latStr},${lonStr}(${encodeURIComponent(safeName)})`;
+    }
+    return `geo:${latStr},${lonStr}`;
+  };
+
+  return {
+    buildYandexUrl,
+    buildOrganicMapsUrl,
+    buildOrganicMapsLinks,
+    buildOpenStreetMapUrl,
+    buildGeoUrl,
+  };
 })();
 
 if (typeof window !== "undefined") {
