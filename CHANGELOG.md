@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.3
+
+### Fixes
+- Fixed an issue where locations wouldn’t open in Yandex Maps.
+- Fixed an issue where locations wouldn’t open in Organic Maps.
+- Multiple bug fixes and stability improvements.
+
+### Update
+- Offline support: the app can now run without an internet connection after you open it once (maps are not available offline yet)
+- You can open your place on OpenStreetMaps
+- You can now copy a place name and address by clicking on it.
+- Small UI refresh and design improvements.
+
 
 ## 1.2
 
