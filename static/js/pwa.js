@@ -1,4 +1,6 @@
 (() => {
+  const APP_VERSION = "1.4.1";
+  const VERSION_KEY = "geo:pwa-app-version";
   const isStandalone =
     window.matchMedia("(display-mode: standalone)").matches ||
     window.navigator.standalone === true;
@@ -8,6 +10,8 @@
   const updateRefreshBtn = document.getElementById("updateBannerRefresh");
   let waitingWorker = null;
   let refreshTriggered = false;
+  const savedVersion = localStorage.getItem(VERSION_KEY) || "";
+  const versionChanged = savedVersion !== APP_VERSION;
 
   const setConnectionStatus = () => {
     const online = navigator.onLine;
@@ -34,12 +38,18 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("/static/sw.js", { scope: "/" })
+        .register(`/static/sw.js?v=${encodeURIComponent(APP_VERSION)}`, { scope: "/" })
         .then((reg) => {
           if (!reg) return;
+          reg.update().catch(() => {});
           if (reg.waiting) {
             waitingWorker = reg.waiting;
-            if (updateBanner) updateBanner.hidden = false;
+            if (versionChanged) {
+              refreshTriggered = true;
+              waitingWorker.postMessage({ type: "SKIP_WAITING" });
+            } else if (updateBanner) {
+              updateBanner.hidden = false;
+            }
           }
           reg.addEventListener("updatefound", () => {
             const newWorker = reg.installing;
@@ -47,7 +57,12 @@
             newWorker.addEventListener("statechange", () => {
               if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
                 waitingWorker = newWorker;
-                if (updateBanner) updateBanner.hidden = false;
+                if (versionChanged) {
+                  refreshTriggered = true;
+                  waitingWorker.postMessage({ type: "SKIP_WAITING" });
+                } else if (updateBanner) {
+                  updateBanner.hidden = false;
+                }
               }
             });
           });
@@ -67,6 +82,11 @@
   navigator.serviceWorker?.addEventListener?.("controllerchange", () => {
     if (!refreshTriggered) return;
     refreshTriggered = false;
+    localStorage.setItem(VERSION_KEY, APP_VERSION);
     window.location.reload();
   });
+
+  if (!versionChanged) {
+    localStorage.setItem(VERSION_KEY, APP_VERSION);
+  }
 })();

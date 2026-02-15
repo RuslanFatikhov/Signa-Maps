@@ -1,4 +1,7 @@
-const CACHE_VERSION = "geo-notion-v2";
+const SW_URL = new URL(self.location.href);
+const SW_VERSION_RAW = SW_URL.searchParams.get("v") || "dev";
+const SW_VERSION = SW_VERSION_RAW.replace(/[^a-zA-Z0-9._-]/g, "-");
+const CACHE_VERSION = `geo-notion-${SW_VERSION}`;
 const CORE_CACHE = `core-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
 const API_CACHE = `api-${CACHE_VERSION}`;
@@ -59,7 +62,8 @@ const CORE_ASSETS = [
   "/static/img/icons/search.svg",
   "/static/img/icons/share.svg",
   "/static/img/icons/trash.svg",
-  "/static/img/icons/success.svg"
+  "/static/img/icons/success.svg",
+  "/static/img/loading.gif"
 ];
 
 const precacheCore = async () => {
@@ -80,6 +84,7 @@ const precacheCore = async () => {
 
 self.addEventListener("install", (event) => {
   event.waitUntil(precacheCore());
+  self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
@@ -170,6 +175,10 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (url.pathname.startsWith("/static/")) {
+    if (url.pathname.startsWith("/static/js/") || url.pathname.startsWith("/static/css/")) {
+      event.respondWith(networkFirst(request, RUNTIME_CACHE));
+      return;
+    }
     event.respondWith(cacheFirst(request, RUNTIME_CACHE));
     return;
   }

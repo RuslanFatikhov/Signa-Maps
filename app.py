@@ -31,6 +31,9 @@ ANALYTICS_EVENTS = {
     "share_link_created": "share_links_created_total",
     "share_link_opened": "share_links_opened_total",
 }
+APP_VERSION = os.environ.get("APP_VERSION", "1.4.1")
+MAPBOX_ACCESS_TOKEN = os.environ.get("MAPBOX_ACCESS_TOKEN") or os.environ.get("MAPBOX_TOKEN", "")
+MAPBOX_STYLE_URL = os.environ.get("MAPBOX_STYLE_URL", "mapbox://styles/mapbox/streets-v12")
 
 
 def create_app() -> Flask:
@@ -284,6 +287,14 @@ def create_app() -> Flask:
 
     ensure_db()
     ensure_analytics()
+
+    @app.context_processor
+    def inject_app_version():
+        return {
+            "app_version": APP_VERSION,
+            "mapbox_access_token": MAPBOX_ACCESS_TOKEN,
+            "mapbox_style_url": MAPBOX_STYLE_URL,
+        }
 
     @app.route("/api/health")
     def health():
