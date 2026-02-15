@@ -328,6 +328,10 @@ def create_app() -> Flask:
             response.headers["Pragma"] = "no-cache"
             response.headers["Expires"] = "0"
         if request.path == "/static/sw.js":
+            # Always revalidate service worker script to avoid stale PWA clients after deploy.
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
             response.headers["Service-Worker-Allowed"] = "/"
         return response
 
