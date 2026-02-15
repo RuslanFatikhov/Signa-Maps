@@ -25,6 +25,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const listToggleBtn = document.getElementById("listToggleBtn");
   const listSearch = document.getElementById("listSearch");
   const listSearchInput = document.getElementById("listSearchInput");
+  const listImportInput = document.getElementById("listImportInput");
+  const importOverlay = document.getElementById("importOverlay");
+  const importFailText = document.getElementById("importFailText");
+  const importSuccessToList = document.getElementById("importSuccessToList");
+  const importSuccessAnother = document.getElementById("importSuccessAnother");
+  const importFailRetry = document.getElementById("importFailRetry");
+  const importFailExit = document.getElementById("importFailExit");
   const shareGate = document.getElementById("sharePasswordGate");
   const shareGatePanel = shareGate?.querySelector(".share-gate__panel");
   const shareGateInput = document.getElementById("shareGateInput");
@@ -44,6 +51,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let remoteSaveTimer = null;
   let listsWithPlaces = new Set();
   let listSearchQuery = "";
+  let lastImportedFile = null;
+  let importInFlight = false;
 
   const loadRemoteShare = async (shareId, password = "") => {
     if (!shareId) return null;
@@ -344,6 +353,107 @@ document.addEventListener("DOMContentLoaded", () => {
     listsBackdrop?.setAttribute("aria-hidden", "true");
   };
 
+  const clearImportInput = () => {
+    if (listImportInput) listImportInput.value = "";
+  };
+
+  const openImportOverlay = (state, failMessage = "") => {
+    if (!importOverlay) return;
+    importOverlay.classList.add("is-open");
+    importOverlay.setAttribute("aria-hidden", "false");
+    importOverlay.querySelectorAll("[data-import-panel]").forEach((panel) => {
+      const isCurrent = panel.dataset.importPanel === state;
+      panel.hidden = !isCurrent;
+      panel.classList.toggle("is-active", isCurrent);
+    });
+    if (state === "fail" && importFailText) {
+      importFailText.textContent =
+        failMessage || "We couldn’t process this file. Please try again.";
+    }
+  };
+
+  const closeImportOverlay = () => {
+    if (!importOverlay || importInFlight) return;
+    importOverlay.classList.remove("is-open");
+    importOverlay.setAttribute("aria-hidden", "true");
+    importOverlay.querySelectorAll("[data-import-panel]").forEach((panel) => {
+      panel.hidden = true;
+      panel.classList.remove("is-active");
+    });
+    clearImportInput();
+  };
+
+  const isSupportedImportFile = (file) => {
+    const fileName = (file?.name || "").toLowerCase();
+    return fileName.endsWith(".gpx") || fileName.endsWith(".csv") || fileName.endsWith(".kmz");
+  };
+
+  const addImportedList = (payload) => {
+    if (readOnly || isRemoteShare) return;
+    const importedPlaces = Array.isArray(payload?.places)
+      ? payload.places
+          .map((place) => {
+            const lat = Number(place?.lat);
+            const lng = Number(place?.lng);
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+            return {
+              id: place?.id || GeoStore.createId(),
+              title: place?.title || "Imported point",
+              lat,
+              lng,
+              note: place?.note || "",
+              address: place?.address || "",
+              createdAt: place?.createdAt || new Date().toISOString(),
+            };
+          })
+          .filter(Boolean)
+      : [];
+    const nextList = {
+      id: payload?.list_id || GeoStore.createId(),
+      title: (payload?.list_title || "Imported map").trim() || "Imported map",
+      places: importedPlaces,
+      createdAt: new Date().toISOString(),
+    };
+    lists = [nextList, ...lists];
+    currentListId = nextList.id;
+    GeoStore.saveLists(lists);
+    GeoStore.saveActiveListId(currentListId);
+    listsWithPlaces = new Set(
+      lists.filter((list) => (list.places || []).length > 0).map((list) => list.id)
+    );
+    renderListsPanel();
+    syncFromActiveList();
+  };
+
+  const uploadImportFile = async (file) => {
+    if (!file) return;
+    if (!isSupportedImportFile(file)) {
+      importInFlight = false;
+      openImportOverlay("fail", "Unsupported file format");
+      return;
+    }
+    importInFlight = true;
+    openImportOverlay("loading");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch("/api/import", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data?.ok) {
+        throw new Error(data?.error || "Import failed");
+      }
+      addImportedList(data);
+      openImportOverlay("success");
+    } catch (err) {
+      openImportOverlay("fail", err?.message || "We couldn’t process this file. Please try again.");
+    } finally {
+      importInFlight = false;
+    }
+  };
+
   const getVisiblePlaces = () => places.filter((p) => !pendingDeletedIds.has(p.id));
 
   const filterPlaces = (items) => {
@@ -416,6 +526,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const renderListsPanel = () => {
     if (!listsPanelBody) return;
     listsPanelBody.innerHTML = "";
+    if (!listEditMode && !readOnly && !isRemoteShare) {
+      const importBtn = document.createElement("button");
+      importBtn.type = "button";
+      importBtn.className = "btn_label_fill_primary lists-panel__import-btn";
+      importBtn.id = "listImportBtn";
+      importBtn.textContent = "Import GPX / KMZ / CSV";
+      listsPanelBody.appendChild(importBtn);
+    }
     const source = listEditMode ? listDrafts : lists;
     source.forEach((list, index) => {
       if (listEditMode) {
@@ -841,6 +959,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (listsPanelBody && !readOnly) {
     listsPanelBody.addEventListener("click", (e) => {
+      const importButton = e.target.closest("#listImportBtn");
+      if (!importButton || listEditMode || isRemoteShare) return;
+      clearImportInput();
+      listImportInput?.click();
+    });
+
+    listsPanelBody.addEventListener("click", (e) => {
       if (listEditMode) return;
       const target = e.target.closest("[data-list-id]");
       if (!target) return;
@@ -921,6 +1046,39 @@ document.addEventListener("DOMContentLoaded", () => {
       dragHandleId = null;
     });
   }
+
+  listImportInput?.addEventListener("change", () => {
+    const file = listImportInput.files?.[0];
+    if (!file) return;
+    lastImportedFile = file;
+    uploadImportFile(file);
+  });
+
+  importSuccessToList?.addEventListener("click", () => {
+    closeImportOverlay();
+    lastImportedFile = null;
+  });
+
+  importSuccessAnother?.addEventListener("click", () => {
+    closeImportOverlay();
+    lastImportedFile = null;
+    listImportInput?.click();
+  });
+
+  importFailRetry?.addEventListener("click", () => {
+    if (importInFlight) return;
+    if (lastImportedFile) {
+      uploadImportFile(lastImportedFile);
+      return;
+    }
+    clearImportInput();
+    listImportInput?.click();
+  });
+
+  importFailExit?.addEventListener("click", () => {
+    closeImportOverlay();
+    lastImportedFile = null;
+  });
 
   createListBtn?.addEventListener("click", createList);
   listEditToggle?.addEventListener("click", enterListEdit);

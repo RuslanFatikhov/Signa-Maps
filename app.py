@@ -1,12 +1,18 @@
 import hashlib
 import json
 import os
+import csv
+import io
+import re
 import secrets
 import sqlite3
 import uuid
+import zipfile
 from datetime import datetime, timezone
+import xml.etree.ElementTree as ET
 
 from flask import Flask, abort, jsonify, render_template, request, url_for
+from markupsafe import escape
 
 ANALYTICS_KEYS = (
     "sessions_total",
@@ -110,6 +116,172 @@ def create_app() -> Flask:
         supplied = request.headers.get("X-Admin-Token") or request.args.get("token") or ""
         return secrets.compare_digest(supplied, admin_token)
 
+    def render_markdown(text: str) -> str:
+        if not text:
+            return "<p>Changelog is unavailable right now.</p>"
+
+        lines = text.splitlines()
+        html_parts = []
+        in_list = False
+        paragraph = []
+
+        def flush_paragraph():
+            nonlocal paragraph
+            if paragraph:
+                content = " ".join(paragraph).strip()
+                if content:
+                    html_parts.append(f"<p>{format_inline_markdown(content)}</p>")
+                paragraph = []
+
+        def close_list():
+            nonlocal in_list
+            if in_list:
+                html_parts.append("</ul>")
+                in_list = False
+
+        def format_inline_markdown(value: str) -> str:
+            safe = escape(value)
+            safe = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", safe)
+            safe = re.sub(r"`(.+?)`", r"<code>\1</code>", safe)
+            return safe
+
+        for raw_line in lines:
+            line = raw_line.rstrip()
+            stripped = line.strip()
+
+            if not stripped:
+                flush_paragraph()
+                close_list()
+                continue
+
+            if stripped.startswith("### "):
+                flush_paragraph()
+                close_list()
+                html_parts.append(f"<h4>{format_inline_markdown(stripped[4:])}</h4>")
+                continue
+            if stripped.startswith("## "):
+                flush_paragraph()
+                close_list()
+                html_parts.append(f"<h3>{format_inline_markdown(stripped[3:])}</h3>")
+                continue
+            if stripped.startswith("# "):
+                flush_paragraph()
+                close_list()
+                html_parts.append(f"<h2>{format_inline_markdown(stripped[2:])}</h2>")
+                continue
+
+            if stripped.startswith("- ") or stripped.startswith("— "):
+                flush_paragraph()
+                if not in_list:
+                    html_parts.append("<ul>")
+                    in_list = True
+                html_parts.append(f"<li>{format_inline_markdown(stripped[2:])}</li>")
+                continue
+
+            paragraph.append(stripped)
+
+        flush_paragraph()
+        close_list()
+
+        return "\n".join(html_parts)
+
+    def parse_float(value):
+        try:
+            return float(str(value).strip())
+        except (TypeError, ValueError):
+            return None
+
+    def build_place(lat, lng, title="Untitled", note="", address=""):
+        return {
+            "id": uuid.uuid4().hex,
+            "title": (title or "Untitled").strip() or "Untitled",
+            "lat": lat,
+            "lng": lng,
+            "note": note or "",
+            "address": address or "",
+            "createdAt": datetime.now(timezone.utc).isoformat(),
+        }
+
+    def parse_gpx_places(raw_bytes):
+        root = ET.fromstring(raw_bytes)
+        ns = {"gpx": "http://www.topografix.com/GPX/1/1"}
+        points = root.findall(".//gpx:wpt", ns)
+        if not points:
+            points = root.findall(".//wpt")
+        places = []
+        for point in points:
+            lat = parse_float(point.attrib.get("lat"))
+            lng = parse_float(point.attrib.get("lon"))
+            if lat is None or lng is None:
+                continue
+            name = point.findtext("gpx:name", default="", namespaces=ns) or point.findtext("name", default="")
+            desc = point.findtext("gpx:desc", default="", namespaces=ns) or point.findtext("desc", default="")
+            places.append(build_place(lat, lng, title=name or "GPX point", note=desc))
+        return places
+
+    def parse_csv_places(raw_bytes):
+        text = raw_bytes.decode("utf-8-sig", errors="replace")
+        reader = csv.DictReader(io.StringIO(text))
+        if not reader.fieldnames:
+            return []
+
+        key_map = {name.strip().lower(): name for name in reader.fieldnames if name}
+        lat_key = next((key_map.get(k) for k in ("latitude", "lat")), None)
+        lng_key = next((key_map.get(k) for k in ("longitude", "lng", "lon")), None)
+        title_key = next((key_map.get(k) for k in ("title", "name")), None)
+        note_key = next((key_map.get(k) for k in ("note", "description", "desc")), None)
+        address_key = next((key_map.get(k) for k in ("address", "location")), None)
+
+        if not lat_key or not lng_key:
+            return []
+
+        places = []
+        for row in reader:
+            lat = parse_float(row.get(lat_key))
+            lng = parse_float(row.get(lng_key))
+            if lat is None or lng is None:
+                continue
+            title = row.get(title_key) if title_key else "CSV point"
+            note = row.get(note_key) if note_key else ""
+            address = row.get(address_key) if address_key else ""
+            places.append(build_place(lat, lng, title=title, note=note, address=address))
+        return places
+
+    def parse_kml_places(kml_bytes):
+        root = ET.fromstring(kml_bytes)
+        ns = {"kml": "http://www.opengis.net/kml/2.2"}
+        placemarks = root.findall(".//kml:Placemark", ns)
+        if not placemarks:
+            placemarks = root.findall(".//Placemark")
+        places = []
+        for placemark in placemarks:
+            coords = (
+                placemark.findtext(".//kml:Point/kml:coordinates", default="", namespaces=ns)
+                or placemark.findtext(".//Point/coordinates", default="")
+            )
+            if not coords:
+                continue
+            first = coords.strip().split()[0]
+            parts = [part.strip() for part in first.split(",")]
+            if len(parts) < 2:
+                continue
+            lng = parse_float(parts[0])
+            lat = parse_float(parts[1])
+            if lat is None or lng is None:
+                continue
+            name = placemark.findtext("kml:name", default="", namespaces=ns) or placemark.findtext("name", default="")
+            desc = placemark.findtext("kml:description", default="", namespaces=ns) or placemark.findtext("description", default="")
+            places.append(build_place(lat, lng, title=name or "KML point", note=desc))
+        return places
+
+    def parse_kmz_places(raw_bytes):
+        with zipfile.ZipFile(io.BytesIO(raw_bytes)) as archive:
+            kml_name = next((name for name in archive.namelist() if name.lower().endswith(".kml")), None)
+            if not kml_name:
+                return []
+            kml_bytes = archive.read(kml_name)
+        return parse_kml_places(kml_bytes)
+
     ensure_db()
     ensure_analytics()
 
@@ -131,7 +303,8 @@ def create_app() -> Flask:
                 changelog_text = changelog_file.read()
         except OSError:
             changelog_text = "Changelog is unavailable right now."
-        return render_template("about.html", changelog_text=changelog_text)
+        changelog_html = render_markdown(changelog_text)
+        return render_template("about.html", changelog_html=changelog_html)
 
     @app.route("/admin/analytics")
     def admin_analytics():
@@ -288,6 +461,41 @@ def create_app() -> Flask:
             abort(400)
         increment_analytics(metric)
         return jsonify({"ok": True})
+
+    @app.post("/api/import")
+    def import_file():
+        uploaded = request.files.get("file")
+        if not uploaded or not uploaded.filename:
+            return jsonify({"ok": False, "error": "File is required"}), 400
+
+        extension = os.path.splitext(uploaded.filename)[1].lower()
+        if extension not in {".gpx", ".csv", ".kmz"}:
+            return jsonify({"ok": False, "error": "Unsupported file format"}), 400
+
+        try:
+            raw_bytes = uploaded.read()
+            if extension == ".gpx":
+                places = parse_gpx_places(raw_bytes)
+            elif extension == ".csv":
+                places = parse_csv_places(raw_bytes)
+            else:
+                places = parse_kmz_places(raw_bytes)
+        except (ET.ParseError, zipfile.BadZipFile, UnicodeDecodeError, ValueError):
+            return jsonify({"ok": False, "error": "We couldn’t process this file. Please try again."}), 400
+
+        if not places:
+            return jsonify({"ok": False, "error": "No points found in file"}), 400
+
+        list_title = os.path.splitext(uploaded.filename)[0].strip() or "Imported map"
+        return jsonify(
+            {
+                "ok": True,
+                "list_id": uuid.uuid4().hex,
+                "list_title": list_title,
+                "counts": {"places": len(places), "routes": 0},
+                "places": places,
+            }
+        )
 
     return app
 

@@ -97,6 +97,16 @@ body.lists-open .lists-backdrop{
     flex-direction: column;
     height: calc(100vh - 250px);
     overflow-y: scroll;
+    padding-bottom: var(--space-12);
+}
+
+.lists-panel__import-btn{
+    width: calc(100% - var(--space-8));
+    margin: var(--space-4);
+    margin-bottom: var(--space-2);
+    position: fixed;
+    left: 0;
+    bottom: 100px;
 }
 
 
@@ -144,9 +154,7 @@ body.lists-open .lists-backdrop{
 }
 
 .list-edit-controls{
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
+    display: flex;
 }
 
 .cell-list{
@@ -437,6 +445,57 @@ body.lists-open .lists-backdrop{
 
 .app-loading.is-hidden{
     display: none;
+}
+
+.import-overlay{
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4);
+    background: var(--white200);
+    z-index: 600;
+}
+
+.import-overlay.is-open{
+    display: flex;
+}
+
+.import-overlay__panel{
+    width: min(420px, 100%);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4);
+    text-align: center;
+}
+
+.import-overlay__panel.is-active{
+    display: flex;
+}
+
+.import-overlay__panel[hidden]{
+    display: none !important;
+}
+
+.import-overlay__gif{
+    width: 96px;
+    height: 96px;
+    object-fit: contain;
+}
+
+.import-overlay__actions{
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    gap: var(--space-3);
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+    padding-bottom: var(--space-6);
 }
 
 .main-ui{

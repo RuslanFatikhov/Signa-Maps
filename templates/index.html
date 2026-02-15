@@ -130,6 +130,40 @@
 
 </aside>
 <div class="lists-backdrop" id="listsBackdrop" aria-hidden="true"></div>
+
+<input id="listImportInput" type="file" accept=".gpx,.csv,.kmz" hidden>
+
+<div class="import-overlay" id="importOverlay" aria-hidden="true">
+  <section class="import-overlay__panel" data-import-panel="loading" hidden>
+    <img
+      class="import-overlay__gif"
+      src="{{ url_for('static', filename='img/loading.gif') }}"
+      alt="Loading"
+    >
+    <p class="secondary-200">Importing...</p>
+  </section>
+
+  <section class="import-overlay__panel" data-import-panel="success" hidden>
+    <img src="{{ url_for('static', filename='img/icons/success.svg') }}" alt="Success" aria-hidden="true" class="w200">
+    <h2 class="prime-100 tac">Import complete</h2>
+    <p class="secondary-200 tac">Your file has been converted into a new list. <br>You can edit it or start exploring right away.</p>
+    <div class="import-overlay__actions">
+      
+      <button class="btn_label_fill_primary w100" id="importSuccessAnother" type="button">Upload new file</button>
+      <button class="btn_label_secondary_fill w100" id="importSuccessToList" type="button">To the list</button>
+      
+    </div>
+  </section>
+
+  <section class="import-overlay__panel" data-import-panel="fail" hidden>
+    <h2 class="prime-100">Import failed</h2>
+    <p class="secondary-200" id="importFailText">We couldn’t process this file. Please try again.</p>
+    <div class="import-overlay__actions">
+      <button class="btn_label_fill_primary w100" id="importFailRetry" type="button">Повторить</button>
+      <button class="btn_label_stroke w100" id="importFailExit" type="button">Выйти</button>
+    </div>
+  </section>
+</div>
 </div>
 
 <!--Password gate-->

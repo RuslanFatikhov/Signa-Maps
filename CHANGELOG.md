@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4
+### Features
+- Added file import (GPX / KMZ / CSV). Upload a file and it will be - created as a new list automatically.
+- Full-screen upload flow with loading and status screens.
+
 ## 1.3
 
 ### Fixes

@@ -1001,7 +1001,7 @@ ${items}
       const payload = compactPayload({ places, title, editable: false });
       return buildShareUrl(payload);
     }
-    alert("Не удалось создать ссылку.");
+    alert("Unable to create editable link");
     return "";
   };
 
@@ -1045,7 +1045,7 @@ ${items}
       return share;
     } catch (err) {
       console.warn("Remote share create failed", err);
-      alert("Не удалось создать ссылку.");
+      alert("Unable to create share link");
       return null;
     }
   };

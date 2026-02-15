@@ -85,3 +85,7 @@
 .aic{
     align-items: center !important;
 }
+
+.w200px{
+    width: 200px !important;
+}

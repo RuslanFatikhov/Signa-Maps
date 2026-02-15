@@ -59,6 +59,7 @@ const CORE_ASSETS = [
   "/static/img/icons/search.svg",
   "/static/img/icons/share.svg",
   "/static/img/icons/trash.svg",
+  "/static/img/icons/success.svg"
 ];
 
 const precacheCore = async () => {

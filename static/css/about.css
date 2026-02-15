@@ -202,4 +202,47 @@ h1{
 .changelog-modal__content{
     padding: var(--space-4);
     width: 100%;
+    max-height: calc(100vh - 130px);
+    overflow-y: auto;
+    line-height: 1.45;
+    color: var(--black100);
+}
+
+.changelog-modal__content h2{
+    font-size: var(--space-5);
+    font-weight: 700;
+    margin: 0 0 var(--space-3);
+}
+
+.changelog-modal__content h3{
+    font-size: var(--space-4);
+    font-weight: 700;
+    margin: var(--space-4) 0 var(--space-2);
+}
+
+.changelog-modal__content h4{
+    font-size: var(--space-3);
+    font-weight: 700;
+    margin: var(--space-3) 0 var(--space-2);
+}
+
+.changelog-modal__content p{
+    margin: 0 0 var(--space-3);
+}
+
+.changelog-modal__content ul{
+    margin: 0 0 var(--space-3);
+    padding-left: var(--space-4);
+    list-style: disc;
+}
+
+.changelog-modal__content li{
+    margin-bottom: var(--space-2);
+}
+
+.changelog-modal__content code{
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    background: var(--gray100);
+    border-radius: 6px;
+    padding: 0 4px;
 }
