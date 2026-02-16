@@ -517,9 +517,18 @@ body.lists-open .lists-backdrop{
     object-fit: contain;
 }
 
+@media screen and (max-width:768px) {
+    .card-stack{
+        overflow-y: hidden !important;
+    }
+    
+}
+
 
 
 @media screen and (min-width: 768px) {
+
+    
 
     .menu{
         width: 390px;
