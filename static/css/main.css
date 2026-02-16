@@ -245,6 +245,8 @@ body.lists-open .lists-backdrop{
 .card-stack{
     display: flex;
     flex-direction: column;
+    height: calc(100vh - 260px);
+    overflow-y: scroll;
 }
 
 .card{
